@@ -11,6 +11,10 @@ const FLARE_THROTTLE = 0.2;
 /** Default height of the wheels above the ground at which the flare starts, m. */
 const FLARE_HEIGHT = 2.5;
 const wrapPi = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
+/** Cross-track gain on final, rad of heading per m off the centreline (other legs use 0.004). */
+const FINAL_TRACK_GAIN = 0.015;
+/** Below this wheel height on final, switch from crabbing to the wing-low method, m. */
+const WING_LOW_HEIGHT = 15;
 
 export interface RunwayEnd {
   /** Centreline x of the runway, m. */
@@ -45,6 +49,11 @@ export interface CircuitResult {
   touchdownKt: number;
   /** Where along the runway (world z) the wheels first touched. */
   touchdownZ: number;
+  /** Distance right of the centreline at touchdown, m, and sideways speed then, m/s (+ = drifting right). */
+  touchdownOffset: number;
+  touchdownDrift: number;
+  /** Largest distance from the centreline during the landing roll, m. */
+  maxRolloutOffset: number;
   touchdownLoad: number;
   landingRoll: number;
   stopped: boolean;
@@ -82,7 +91,7 @@ export function flyCircuit(world: PhysicsWorld, ac: PoweredAircraft, rw: RunwayE
   const restHeight = ac.body.position.y;
 
   const res: CircuitResult = {
-    phase: 'takeoff', maxHeight: 0, touchdownSink: 0, touchdownKt: 0, touchdownZ: NaN, touchdownLoad: 0, landingRoll: 0,
+    phase: 'takeoff', maxHeight: 0, touchdownSink: 0, touchdownKt: 0, touchdownZ: NaN, touchdownOffset: NaN, touchdownDrift: NaN, maxRolloutOffset: 0, touchdownLoad: 0, landingRoll: 0,
     stopped: false, stopPoint: new THREE.Vector3(), stopSurface: 'grass', wingOrNoseStrike: false, log: [],
   };
   let touchdownZ = 0;
@@ -93,10 +102,32 @@ export function flyCircuit(world: PhysicsWorld, ac: PoweredAircraft, rw: RunwayE
    * Follow a straight leg: a heading and a point on the line. Cross-track error is how far
    * we are left of the line (turn right to correct); the heading correction grows with it.
    */
-  const followLeg = (heading: number, px: number, pz: number) => {
+  const followLeg = (heading: number, px: number, pz: number, gain = 0.004) => {
     const p = ac.body.position;
+    const v = ac.body.velocity;
     const leftOf = -((p.x - px) * Math.cos(heading) + (p.z - pz) * Math.sin(heading));
-    pilot.headingTo(wrapPi(heading + clamp(0.004 * leftOf, -0.6, 0.6)), 0.4);
+    // Steer the ground track, not the nose: in a crosswind the nose points into wind (a crab)
+    // by however much it takes for the track over the ground to follow the leg.
+    const track = Math.hypot(v.x, v.z) > 5 ? Math.atan2(v.x, -v.z) : attitude(ac).heading;
+    const crab = wrapPi(attitude(ac).heading - track);
+    pilot.headingTo(wrapPi(heading + crab + clamp(gain * leftOf, -0.6, 0.6)), 0.4);
+  };
+  /**
+   * Wing-low (sideslip) crosswind technique for short final, the flare and touchdown: rudder
+   * keeps the nose on the runway heading, and the into-wind wing is lowered just enough to
+   * stop the drift, so the wheels touch down straight with no sideways movement.
+   */
+  const rightX = rw.dir; // runway's right is east (+x) for runway 36, west for 18
+  /** On the ground: the runway heading, angled gently back towards the centreline if off it. */
+  const centrelineHeading = () => wrapPi(runwayHeading - clamp(0.03 * (ac.body.position.x - rw.x) * rightX, -0.15, 0.15));
+  const wingLow = () => {
+    const a = attitude(ac);
+    const b = ac.body;
+    const drift = b.velocity.x * rightX; // m/s to the runway's right
+    const offset = (b.position.x - rw.x) * rightX;
+    const bankCmd = clamp(-0.12 * drift - 0.02 * offset, -0.26, 0.26);
+    ac.pilot.aileron = clamp(2.0 * (bankCmd - a.bank) + 0.6 * b.angularVelocity.z);
+    ac.pilot.rudder = clamp(2.5 * wrapPi(runwayHeading - a.heading) + 0.8 * b.angularVelocity.y);
   };
   /** Climb at best-rate speed and full power to circuit height, then level at circuit power. */
   const climbOrCruise = () => {
@@ -133,7 +164,7 @@ export function flyCircuit(world: PhysicsWorld, ac: PoweredAircraft, rw: RunwayE
       case 'takeoff':
         ac.pilot.throttle = 1;
         pilot.pitchTo(s.threePointPitch);
-        pilot.steerOnGround(runwayHeading);
+        pilot.steerOnGround(centrelineHeading());
         if (h > 3) res.phase = 'climb';
         break;
       case 'climb':
@@ -170,7 +201,8 @@ export function flyCircuit(world: PhysicsWorld, ac: PoweredAircraft, rw: RunwayE
           followLeg(legs.base, 0, turnZ.base);
           if (Math.abs(p.x - rw.x) < 80) res.phase = 'final';
         } else {
-          followLeg(legs.upwind, rw.x, 0);
+          if (h - restHeight < WING_LOW_HEIGHT) wingLow();
+          else followLeg(legs.upwind, rw.x, 0, FINAL_TRACK_GAIN); // tighter on final: line up with the centreline
           if (h - restHeight < (s.flareHeight ?? FLARE_HEIGHT)) {
             res.phase = 'flare';
             flarePitch = attitude(ac).pitch;
@@ -188,24 +220,27 @@ export function flyCircuit(world: PhysicsWorld, ac: PoweredAircraft, rw: RunwayE
           flarePitch = Math.min(s.threePointPitch, flarePitch + dt * 1.5 * Math.max(0, -ac.state.verticalSpeed - targetSink));
         }
         pilot.pitchTo(flarePitch);
-        pilot.bankTo(0);
+        wingLow();
         if (ac.gear.states.some((st, i) => st.inContact && ac.gear.legs[i].kind === 'wheel')) {
           res.touchdownSink = -ac.state.verticalSpeed;
           res.touchdownKt = mpsToKt(ac.state.ias);
           touchdownZ = p.z;
           res.touchdownZ = p.z;
+          res.touchdownOffset = (p.x - rw.x) * rightX;
+          res.touchdownDrift = ac.body.velocity.x * rightX;
           res.phase = 'rollout';
         }
         break;
       case 'rollout':
         ac.pilot.throttle = 0;
         ac.pilot.elevator = 1; // stick fully back: tail firmly down
-        pilot.steerOnGround(runwayHeading);
+        pilot.steerOnGround(centrelineHeading());
         // Brakes once the tail is down (all wheels on): braking with the tail up risks a nose-over.
         if (ac.gear.states.every((st, i) => ac.gear.legs[i].kind !== 'wheel' || st.inContact)) {
           ac.pilot.brakeLeft = ac.pilot.brakeRight = s.rolloutBrakes ?? 0;
         }
         res.touchdownLoad = Math.max(res.touchdownLoad, ac.state.loadFactor);
+        res.maxRolloutOffset = Math.max(res.maxRolloutOffset, Math.abs(p.x - rw.x));
         if (ac.body.velocity.length() < 0.3) {
           res.stopped = true;
           res.landingRoll = Math.abs(p.z - touchdownZ);

@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "flight-test": "vitest run tests/flightTest.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

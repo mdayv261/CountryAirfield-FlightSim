@@ -9,6 +9,7 @@ import type { PoweredAircraft } from '../../src/physics/PoweredAircraft';
 import type { Ground } from '../../src/physics/gear';
 import { PhysicsWorld } from '../../src/physics/PhysicsWorld';
 import { surfaceAt } from '../../src/physics/surfaces';
+import type { WindModel } from '../../src/physics/wind';
 
 export const dt = PHYSICS_DT;
 const clamp = (v: number, lo = -1, hi = 1) => Math.min(hi, Math.max(lo, v));
@@ -17,8 +18,8 @@ const wrapPi = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 /** The airfield is flat (y = 0) out to well beyond the runways, with real surfaces. */
 export const fieldGround: Ground = { heightAt: () => 0, surfaceAt };
 
-export function makeWorld(data: AircraftData = AIRCRAFT.airbike103, fuelFraction = 1) {
-  const world = new PhysicsWorld(fieldGround);
+export function makeWorld(data: AircraftData = AIRCRAFT.airbike103, fuelFraction = 1, wind?: WindModel) {
+  const world = new PhysicsWorld(fieldGround, wind);
   const ac = data.type === 'gyroplane' ? new Gyroplane(data, fuelFraction) : new FixedWingAircraft(data, fuelFraction);
   world.add(ac);
   return { world, ac };
@@ -128,6 +129,16 @@ export class TestPilot {
   headingTo(psi: number, maxBank = 0.35) {
     const err = wrapPi(psi - attitude(this.ac).heading);
     this.bankTo(clamp(1.2 * err, -maxBank, maxBank));
+  }
+
+  /**
+   * On the ground on runway 36 or 18: steer along the runway, angled gently back towards the
+   * centreline (at x = centreX) when off it, as a pilot does in a crosswind.
+   */
+  steerAlongCentreline(runwayHeading: number, centreX: number) {
+    const right = Math.cos(runwayHeading) >= 0 ? 1 : -1; // runway's right is +x for 36
+    const off = (this.ac.body.position.x - centreX) * right;
+    this.steerOnGround(wrapPi(runwayHeading - clamp(0.03 * off, -0.15, 0.15)));
   }
 
   /** On the ground: steer along a heading with rudder/tailwheel, wings level with aileron. */

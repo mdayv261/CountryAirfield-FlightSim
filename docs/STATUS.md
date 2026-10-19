@@ -1,7 +1,7 @@
 # Project Status
 
-**Current stage:** 7 – Cockpits, HUD and views (complete; exit checks pass 2026-10-20)
-**Next stage:** 8 (awaiting the brief)
+**Current stage:** 8 – Flight testing and tuning (performance and handling checks pass 2026-10-20; awaiting the user's flight notes)
+**Next stage:** 9 (after all docs/FLIGHT_NOTES.md notes are resolved)
 
 ## What works
 - Vite 8 + TypeScript 7 (strict) + Three.js r186 + Vitest 4. Scripts: `npm run dev`, `npm test`, `npm run build`, `npm run preview`, `npm run typecheck`.
@@ -26,6 +26,25 @@
   - Sky: gradient dome shader with a sun disc and glow (sun azimuth 25°, elevation 52°, northern sky), with matching horizon fog.
   - Altocumulus: rows of lumpy cloudlets (6 lobes each, instanced), 22 km square layer, every lobe between 3,000 and 4,500 m.
   - Sun shadows (2048 map) over an 800 m square around the airfield. Logarithmic depth buffer.
+- **Stage 8 flight testing and tuning** (2026-10-20):
+  - Automated test pilot (`tests/flightTest/programme.ts`, `npm run flight-test`): flies each aircraft through stall,
+    cruise, climb (with Vy/Vx for the Decathlon), maximum level speed (gyro), take-off roll and landing roll, and writes
+    the results table to `docs/FLIGHT_TEST_REPORT.md`. All 17 points within ±10 % of CLAUDE.md, except the Air-Bike
+    landing roll, kept as an accepted deviation (user decision, see Decisions). No data-file tuning was needed.
+  - Handling (`tests/handling.test.ts`): a 3 m/s vertical "1 − cos" gust gives Δn of 0.82–0.87 of the Pratt–Walker
+    (FAR 23.341) value for the fixed wings and 1.03 of a blade-element rotor estimate for the gyro (it rides gusts
+    best per unit weight); a 3 m/s side gust, controls fixed, rocks them 1.4–2.9° and they settle; in moderate
+    turbulence the test pilot holds RMS bank ≤ 1.2° and height within 2 m. Crosswind take-offs and landings from both
+    sides at Air-Bike 6, Decathlon 12, gyro 10 kt (at least the FAR 23.233 minimum of 0.2 Vso): lift-off within 1.8 m
+    of the centreline using ≤ 22 % control; touchdown on the runway with < 0.2 m/s drift, roll-out on the runway.
+  - Physics fix found by the crosswind tests: the gyro's fin took its flow angle from the aircraft's own motion but its
+    dynamic pressure including the prop slipstream, so at walking pace in a crosswind it saw a 90° flow at slipstream
+    pressure and slewed the gyro round (51° in a second). The slipstream is now added as air velocity along the prop
+    axis (`liftingSurfaces.ts`); identical in normal flight. The fixed wings were not affected (their slipstream only
+    boosts the rudder and elevator).
+  - Test-pilot technique added: ground-track (crab) following on circuit legs, wing-low on short final and in the
+    flare, steering back to the centreline on the ground, gyro stick into wind, prerotation on the brakes with pedals.
+  - `docs/FLIGHT_NOTES.md`: template for the user's test-flight notes; each will be resolved there.
 - **Stage 7 cockpits, HUD and views** (2026-10-20):
   - `src/cockpit/instruments.ts`: one set of indicated values (IAS, altitude, AGL, VSI with 1 s lag, true heading,
     wet compass with 0.3 s damping, pitch/bank, slip ball from lateral specific force, G with tell-tales, wind at the
@@ -192,7 +211,7 @@
 - Measured in Chrome on the Mac mini M4 (2560x1440 display at 75 Hz): 75 fps, mean frame 13.34 ms,
   p95 13.6 ms, max 14.4 ms over 300 frames, so no dropped frames. The browser locks to the display's 75 Hz refresh.
   Physics holds 120 Hz. P pauses (physics 0 Hz, render continues) and resumes cleanly. No console errors.
-- Tests: 213 passing (Stage 7 added engine-temperature, instrument, HUD/gauge agreement, gauge geometry and view suites; Stage 6 added rotor, gyro performance and static-friction tests; Stage 5 added Decathlon performance, aerobatics, propeller-effects suites; engine response, pitch-attitude check, auto-rudder and the joystick profile added since; Stage 4 added aero, powerplant and Air-Bike performance/circuit suites; Stage 3 added rigid body, atmosphere, wind, gear and input suites). Highlights: free fall matches ½gt²;
+- Tests: 238 passing (Stage 8 added the flight-test programme and gust/turbulence/crosswind handling suites; Stage 7 added engine-temperature, instrument, HUD/gauge agreement, gauge geometry and view suites; Stage 6 added rotor, gyro performance and static-friction tests; Stage 5 added Decathlon performance, aerobatics, propeller-effects suites; engine response, pitch-attitude check, auto-rudder and the joystick profile added since; Stage 4 added aero, powerplant and Air-Bike performance/circuit suites; Stage 3 added rigid body, atmosphere, wind, gear and input suites). Highlights: free fall matches ½gt²;
   a torque-free tumble (with the intermediate-axis flip) conserves energy to 1e-6; an undamped strut bounce returns to its
   release height within 1%; all three aircraft settle at rest on their wheels (loads sum to weight, struts compress by load/k,
   taildraggers 8–13° nose-up); braking stops in v²/(2μg) on gravel and grass; rolling coast distance follows the rolling
@@ -211,7 +230,8 @@
 
 ## Decisions recorded
 - Gyro engine: McCulloch 4318, 65 hp (not Subaru). Stages 7 and 9 will use CHT and a 2-stroke sound for the gyro.
-- Air-Bike landing roll (decided 2026-10-19): keep the physics as modelled and accept the gap to the 61 m target.
+- Air-Bike landing roll (decided 2026-10-19, reconfirmed for Stage 8 on 2026-10-20): keep the physics as modelled and accept
+  the gap to the 61 m target; the flight-test report lists it as an accepted deviation with this reason.
   With no brakes, only drag, rolling resistance and the windmilling prop slow it (about 0.9 m/s² on average), giving
   about 112 m on grass and 165 m on gravel from a 26 kt touchdown. Grass rolling resistance stays at 0.07.
 - Body axes are three.js-style (x right, y up, z aft) rather than the aero convention (x forward, y right, z down),
@@ -268,5 +288,6 @@
 - Clouds are not fogged and stop at the layer edge (11 km out), so at high altitude the edge of the layer can be seen.
 
 ## Next step
-Fly each aircraft in the cockpit view (key 1) and check the panel against the HUD (I toggles it); try the hat switch
-for looking around, and the tower (3) and fly-by (4) views. Then Stage 8 when the brief arrives.
+Fly the aircraft and add notes to docs/FLIGHT_NOTES.md (template inside) for anything that feels wrong, including
+crosswind and gusty presets (N cycles them). Each note will be resolved there; Stage 8 closes when all are resolved.
+`npm run flight-test` regenerates docs/FLIGHT_TEST_REPORT.md after any change.

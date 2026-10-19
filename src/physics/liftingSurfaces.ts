@@ -10,7 +10,11 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
  *
  * For each surface we find the airflow it actually meets: the aircraft's motion through the
  * air plus the swing of the surface from rotation (ω × r), plus a share of the propeller
- * slipstream for surfaces behind a pusher prop. Its angle to that flow gives a lift
+ * slipstream for surfaces behind a pusher prop. The slipstream is extra air blowing straight
+ * back along the propeller axis, so it is added as a velocity: at walking pace in a
+ * crosswind the fin then sees mostly the slipstream from dead ahead, at a small angle, not
+ * the crosswind's 90° multiplied by the slipstream's pressure (which would slew the
+ * aircraft round on the ground). Its angle to that flow gives a lift
  * coefficient (linear up to its stall, then capped), which acts at right angles to the flow
  * in the surface's working plane. Because the surface sits behind the CG, this produces
  * weathercock stability on its own, and the rotation term produces damping.
@@ -64,9 +68,16 @@ export class LiftingSurfaces {
     for (const s of this.surfaces) {
       // Local airflow at the surface: aircraft velocity relative to air plus rotation.
       const v = this.vLocal.crossVectors(omegaBody, s.r).add(airVelocityBody);
+      // Behind a pusher, the slipstream speeds the air up along the prop axis (body −z motion
+      // through the air, i.e. air flowing aft). Its share of the extra dynamic pressure gives
+      // the speed-up: ½ρ(Va + ΔV)² = ½ρVa² + share·Δq, with Va the axial airspeed.
+      const share = (s.slipstream ?? 0) * slipstreamPressure;
+      if (share > 0) {
+        const va = Math.max(-v.z, 0);
+        v.z -= Math.sqrt(va * va + (2 * share) / density) - va;
+      }
       const Vl = v.length();
-      // Behind a pusher, the slipstream adds dynamic pressure along the flow.
-      const q = 0.5 * density * Vl * Vl + (s.slipstream ?? 0) * slipstreamPressure;
+      const q = 0.5 * density * Vl * Vl;
       if (q < 1e-3) continue;
       // Flow angle in the surface's working plane, and the direction lift acts in.
       let angle: number;
