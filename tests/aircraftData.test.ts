@@ -29,7 +29,7 @@ describe('aircraft data files', () => {
     close(a.limits.vne_mps, ktToMps(69));
     close(a.targets.climb_mps, fpmToMps(475));
     expect(a.targets).toMatchObject({ takeoffRoll_m: 76, landingRoll_m: 61 });
-    expect(a.gear).toEqual({ layout: 'taildragger', brakes: false });
+    expect(a.gear).toMatchObject({ layout: 'taildragger', brakes: false });
   });
 
   it('Super Decathlon matches CLAUDE.md', () => {

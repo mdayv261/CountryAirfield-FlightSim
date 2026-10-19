@@ -24,7 +24,61 @@
   },
   "gear": {
     "layout": "taildragger",
-    "brakes": true
+    "brakes": true,
+    "legs": [
+      {
+        "name": "left main",
+        "kind": "wheel",
+        "position_m": [-0.95, -1.25, -0.45],
+        "spring_N_per_m": 70000,
+        "damper_Ns_per_m": 5000,
+        "travel_m": 0.15,
+        "brake": true,
+        "tyreRadius_m": 0.25
+      },
+      {
+        "name": "right main",
+        "kind": "wheel",
+        "position_m": [0.95, -1.25, -0.45],
+        "spring_N_per_m": 70000,
+        "damper_Ns_per_m": 5000,
+        "travel_m": 0.15,
+        "brake": true,
+        "tyreRadius_m": 0.25
+      },
+      {
+        "name": "tailwheel",
+        "kind": "wheel",
+        "position_m": [0, -0.25, 4.6],
+        "spring_N_per_m": 20000,
+        "damper_Ns_per_m": 1000,
+        "travel_m": 0.1,
+        "steerMax_rad": 0.52,
+        "tyreRadius_m": 0.1
+      },
+      {
+        "name": "left wingtip",
+        "kind": "skid",
+        "position_m": [-4.8, 0.85, 0],
+        "spring_N_per_m": 100000,
+        "damper_Ns_per_m": 3000,
+        "travel_m": 0.05
+      },
+      {
+        "name": "right wingtip",
+        "kind": "skid",
+        "position_m": [4.8, 0.85, 0],
+        "spring_N_per_m": 100000,
+        "damper_Ns_per_m": 3000,
+        "travel_m": 0.05
+      }
+    ]
+  },
+  "inertia": {
+    "roll_kgm2": 1193,
+    "pitch_kgm2": 1142,
+    "yaw_kgm2": 2210,
+    "rollYaw_kgm2": 0
   },
   "limits": {
     "vne_mps": 88.999,
@@ -48,6 +102,10 @@
     "Manufacturer speeds published in mph, converted to knots (x 0.869), rounded down to whole knots.",
     "Max weight 816 kg is the aerobatic category limit.",
     "Official figures (americanchampionaircraft.com). Fuel 151 L is usable (40 US gal); total 43 gal / 163 L. Cruise 141 mph at 75% power.",
-    "Fuel density 0.72 kg/L (avgas 100LL)."
+    "Fuel density 0.72 kg/L (avgas 100LL).",
+    "Gear and inertia are Stage 3 engineering estimates, to be refined in Stage 5.",
+    "Gear: mains 0.45 m ahead of CG, 1.9 m track, toe brakes; steerable tailwheel (+/-30 deg) 5.05 m behind the mains; about 11 deg nose-up on the ground.",
+    "Struts sized for ~5 cm static compression on the mains and ~0.5 critical damping.",
+    "Inertia from Roskam radii of gyration for light singles (Rx 0.248, Ry 0.338, Rz 0.393) with an assumed 7.0 m length."
   ]
 }

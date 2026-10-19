@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { WINDSOCK } from './layout';
 import { smoothstep } from './noise';
-import type { WindVector } from './wind';
+import type { WindVector } from '../physics/windVector';
 
 export interface WindsockPose {
   /** Rotation about +Y that points the sock's local +X axis downwind, rad. */

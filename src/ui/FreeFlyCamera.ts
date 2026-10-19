@@ -26,6 +26,10 @@ const MIN_CLEARANCE = 1.0; // m above the ground
 export class FreeFlyCamera {
   /** Base flying speed, m/s. */
   speed = 30;
+  /** Arrow keys look around (off while the keyboard is flying). */
+  arrowLook = true;
+  /** Mouse drag looks around (off while the mouse is the control stick). */
+  mouseLook = true;
   private yaw = 0;
   private pitch = 0;
   private dragging = false;
@@ -40,6 +44,7 @@ export class FreeFlyCamera {
   ) {
     camera.rotation.order = 'YXZ'; // yaw about world up, then pitch: no roll creeps in
     dom.addEventListener('pointerdown', (e) => {
+      if (!this.mouseLook) return;
       this.dragging = true;
       this.lastX = e.clientX;
       this.lastY = e.clientY;
@@ -88,7 +93,7 @@ export class FreeFlyCamera {
     const k = this.keys;
     const lookX = (k.isDown('ArrowRight') ? 1 : 0) - (k.isDown('ArrowLeft') ? 1 : 0);
     const lookY = (k.isDown('ArrowDown') ? 1 : 0) - (k.isDown('ArrowUp') ? 1 : 0);
-    if (lookX || lookY) this.look(lookX * LOOK_RAD_PER_S * dt, lookY * LOOK_RAD_PER_S * dt);
+    if (this.arrowLook && (lookX || lookY)) this.look(lookX * LOOK_RAD_PER_S * dt, lookY * LOOK_RAD_PER_S * dt);
 
     const fwd = (k.isDown('KeyW') ? 1 : 0) - (k.isDown('KeyS') ? 1 : 0);
     const side = (k.isDown('KeyD') ? 1 : 0) - (k.isDown('KeyA') ? 1 : 0);

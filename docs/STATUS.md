@@ -1,11 +1,11 @@
 # Project Status
 
-**Current stage:** 2 – Airfield and world (complete; exit check passed 2026-10-19)
-**Next stage:** 3 – Flight core
+**Current stage:** 3 – Flight core (complete; exit check passed 2026-10-19)
+**Next stage:** 4 – Air-Bike 103
 
 ## What works
 - Vite 8 + TypeScript 7 (strict) + Three.js r186 + Vitest 4. Scripts: `npm run dev`, `npm test`, `npm run build`, `npm run preview`, `npm run typecheck`.
-- Folder layout per CLAUDE.md (`src/physics`, `src/cockpit` and `src/audio` are still empty placeholders).
+- Folder layout per CLAUDE.md (`src/cockpit` and `src/audio` are still empty placeholders).
 - `src/core/GameLoop.ts`: fixed 120 Hz physics step with an accumulator, decoupled from the display rate. It also provides an interpolation `alpha` for rendering, a 0.25 s catch-up cap and pause (P key).
 - `src/core/units.ts`: display-only unit conversions. `src/core/constants.ts`: sim-wide constants.
 - `src/aircraft/schema.ts`: typed `AircraftData` plus `validateAircraftData()`. The validator rejects missing fields, bad enum values and out-of-range numbers, which catches knots typed in place of m/s.
@@ -26,6 +26,34 @@
   - Sky: gradient dome shader with a sun disc and glow (sun azimuth 25°, elevation 52°, northern sky), with matching horizon fog.
   - Altocumulus: rows of lumpy cloudlets (6 lobes each, instanced), 22 km square layer, every lobe between 3,000 and 4,500 m.
   - Sun shadows (2048 map) over an 800 m square around the airfield. Logarithmic depth buffer.
+- **Stage 3 flight core** (`src/physics`, `src/input`):
+  - `RigidBody`: 6-DOF, quaternion attitude, full inertia tensor, body axes x right / y up / z aft (forward −z, origin at CG;
+    identity = level facing north). Translation uses semi-implicit Euler. Rotation uses Euler's equations including the
+    gyroscopic ω×Iω term, solved by implicit midpoint (5 passes), which conserves energy and momentum when torque-free.
+    Keeps the previous state so rendering interpolates between physics steps.
+  - `atmosphere.ts`: ISA troposphere (T, p, ρ, a) with an ISA deviation input; matches the ICAO table to 0.02%.
+  - `WindModel`: steady wind reported at 10 m with power-law shear (α 0.14, constant above 300 m);
+    Poisson-timed 1−cos gusts with a small direction swing; Dryden-style first-order turbulence
+    (σ: light 0.7, moderate 1.5, severe 3 m/s; L = 150 m, so the time scale is L/V); head/crosswind components.
+    7 presets in `windPresets.ts` (calm, 36 headwind, 18 gusting, quartering, E and W crosswinds, strong crosswind). Seeded and repeatable.
+  - `GearSet`: spring-damper struts with a 10× bump stop; normal load along the ground normal. Tyre friction: rolling
+    resistance plus brakes in the rolling direction, slip-angle side force (peak at 8°), friction-circle cap.
+    Skids slide with Coulomb friction. Pedal steering: nosewheel same way, tailwheel opposite, so right pedal turns right.
+    Stability safeguards: friction gain, strut stiffness and damping are capped per contact using its effective mass
+    and the time step (no effect on real aircraft struts; prevents chatter or blow-ups on light tumbling objects).
+  - Surfaces (`surfaces.ts`): gravel μ 0.6 / rolling 0.04 (runway, taxiways, apron); grass μ 0.4 / rolling 0.07; dam water.
+  - `PhysicsWorld` steps wind, gravity and actors at 120 Hz. `Airframe` = aircraft body + gear from its JSON (aero comes in Stages 4–6).
+  - Aircraft JSON now has `inertia` and `gear.legs`, which are estimates (see each file's notes): Air-Bike and Decathlon taildraggers
+    with steerable tailwheels (±30°) and wingtip skids, Decathlon toe brakes; gyro with foot-steered nosewheel (±34°) and keel tail skid.
+  - Test block (`testBlock.ts`): 50 kg box on a tricycle with 8 corner skids, drag, test thrust, steering and brakes.
+    T throws it from the camera; throttle, pedals and brakes drive it.
+  - Input: channels pitch/roll/yaw/throttle/brakes/prop lever (`controls.ts`). Keyboard flight keys (K toggles):
+    arrows stick, Z/C rudder, +/− or PgUp/PgDn throttle, Home/End prop, B brakes; they ramp in and re-centre.
+    Mouse stick (J toggles). Gamepad API joysticks and pedals with per-device bindings, calibration (min/centre/max),
+    dead zone and invert, saved in localStorage. Joystick beats mouse beats keyboard per channel; unplugging falls back.
+  - Controls and calibration screen (O): live axis bars per device, Bind (move the control), Calibrate (sweep then Done),
+    invert, dead zone, clear, reset defaults, keyboard and mouse toggles.
+  - The windsock now reads the wind model at mast-top height, so gusts and turbulence show on it. N cycles wind presets.
 - Free-fly camera: drag to look, WASD move, R/F up and down, Shift x5, mouse wheel sets speed (shown in kt), arrow keys look.
   Keys 1–6 give preset views (overview, runway 36 threshold, apron, tower/windsock, dam, altocumulus).
 - M is a measuring tool: it drops a point where the crosshair meets the ground and shows the horizontal distance.
@@ -35,7 +63,17 @@
 - Measured in Chrome on the Mac mini M4 (2560x1440 display at 75 Hz): 75 fps, mean frame 13.34 ms,
   p95 13.6 ms, max 14.4 ms over 300 frames, so no dropped frames. The browser locks to the display's 75 Hz refresh.
   Physics holds 120 Hz. P pauses (physics 0 Hz, render continues) and resumes cleanly. No console errors.
-- Tests: 61 passing. Stage 1 suites plus terrain (flat zone, 60 m cap, slope, edge fade, dam, heightfield interpolation),
+- Tests: 106 passing (Stage 3 added rigid body, atmosphere, wind, gear and input suites). Highlights: free fall matches ½gt²;
+  a torque-free tumble (with the intermediate-axis flip) conserves energy to 1e-6; an undamped strut bounce returns to its
+  release height within 1%; all three aircraft settle at rest on their wheels (loads sum to weight, struts compress by load/k,
+  taildraggers 8–13° nose-up); braking stops in v²/(2μg) on gravel and grass; rolling coast distance follows the rolling
+  resistance; nosewheel and tailwheel steering both turn right with right pedal; a draggy body drifts at wind speed;
+  gusts stay within their amplitude; turbulence RMS within 10%; a thrown block bounces and settles on its gear, and one
+  dropped upside down comes fully to rest. A separate stress run of 40 random violent throws all settled (none blew up).
+- Stage 3 exit check in Chrome (Mac mini M4, 75 Hz): a block thrown with T bounces, lands on its gear, rolls and stops
+  (wheel loads sum to its weight). Frame time unchanged: mean 13.34 ms, p95 15.3 ms, no frame over 20 ms, physics 120 Hz.
+  No console errors. Logitech Extreme 3D Pro detected and given default roll/pitch bindings.
+- Earlier stages: Stage 1 suites plus terrain (flat zone, 60 m cap, slope, edge fade, dam, heightfield interpolation),
   airfield (runway sizes and spacing, cones, threshold markers, taxiway connectivity, no overlaps, buildings off pavements,
   tower and windsock), windsock (downwind, calm, full at 15 kt, 3 kt per band, monotonic), trees, clouds (3,000–4,500 m, rows), sun, ray measuring.
 - Stage 2 exit check in Chrome on the Mac mini M4 (2560x1440 at 75 Hz), 600 frames per view over 4 views:
@@ -44,6 +82,9 @@
 
 ## Decisions recorded
 - Gyro engine: McCulloch 4318, 65 hp (not Subaru). Stages 7 and 9 will use CHT and a 2-stroke sound for the gyro.
+- Body axes are three.js-style (x right, y up, z aft) rather than the aero convention (x forward, y right, z down),
+  so models and physics share one frame. Aero code in Stages 4–6 must use alpha = atan2(−v_y, −v_z) and beta from v_x.
+- Reported wind is the 10 m wind; aloft it is up to 1.6× stronger (shear). The windsock at about 10 m reads the reported value.
 - Grass runway "30 m east" means the centrelines are 30 m apart (confirmed by user 2026-10-19), leaving 6 m of grass between the edges.
 - Pilot 90 kg; Air-Bike belt 2.5:1 with 60 in prop; field elevation 50 ft (15.24 m); default runway 36; knots on all aircraft.
 - Gyro rotor rpm: 200 minimum for take-off, 400 maximum.
@@ -62,9 +103,14 @@
 - Shadows only cover an 800 m square around the airfield (fixed). Later stages may need the shadow box to follow the aircraft.
 - About 860k triangles a frame (terrain 160k, plus clouds and trees, plus the shadow pass). Fine on the M4; on a weaker laptop,
   the first things to cut are the terrain cell size (15 m → 20 m) and the cloud lobe count.
-- The inspection wind in `main.ts` is temporary; Stage 3's wind model will drive the windsock instead.
+- Gusts and turbulence are uniform across the field (functions of time only), which is fine for one aircraft.
+- Joystick defaults only cover roll and pitch for non-standard devices. The Extreme 3D Pro's twist (rudder) and throttle
+  slider need binding once on the calibration screen (O), and the slider probably needs "invert".
+- The test block coasts a long way on gravel (rolling 0.04): about 80 m from 8 m/s. That is correct for free-rolling wheels.
+- Inertia and gear figures are estimates; Stages 4–6 should refine them against the targets.
 - Clouds are not fogged and stop at the layer edge (11 km out), so at high altitude the edge of the layer can be seen.
 
 ## Next step
-Stage 3: 6-DOF rigid body, ISA atmosphere, wind model (feeding the windsock), gear contact on `Heightfield`
-(gravel mu 0.6, grass mu 0.4), and keyboard/mouse/gamepad input with calibration.
+Stage 4: Air-Bike 103. Lift/drag tables with stall, control moments, stability derivatives, propeller and Hirth power curve
+with belt reduction, single-cylinder vibration, a procedural model, and tests for stall, cruise, climb and take-off roll vs CLAUDE.md.
+Build it on `Airframe` (add aero and engine forces in applyForces) and read the controls from `InputManager`.

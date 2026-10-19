@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ktToMps } from '../src/core/units';
-import { metFromWind, windFromMet } from '../src/world/wind';
+import { metFromWind, windFromMet } from '../src/physics/windVector';
 import { Windsock, windsockPose } from '../src/world/windsock';
 import * as THREE from 'three';
 

@@ -24,7 +24,61 @@
   },
   "gear": {
     "layout": "taildragger",
-    "brakes": false
+    "brakes": false,
+    "legs": [
+      {
+        "name": "left main",
+        "kind": "wheel",
+        "position_m": [-0.75, -1.0, -0.25],
+        "spring_N_per_m": 25000,
+        "damper_Ns_per_m": 1600,
+        "travel_m": 0.12,
+        "brake": false,
+        "tyreRadius_m": 0.2
+      },
+      {
+        "name": "right main",
+        "kind": "wheel",
+        "position_m": [0.75, -1.0, -0.25],
+        "spring_N_per_m": 25000,
+        "damper_Ns_per_m": 1600,
+        "travel_m": 0.12,
+        "brake": false,
+        "tyreRadius_m": 0.2
+      },
+      {
+        "name": "tailwheel",
+        "kind": "wheel",
+        "position_m": [0, -0.35, 3.5],
+        "spring_N_per_m": 6000,
+        "damper_Ns_per_m": 300,
+        "travel_m": 0.08,
+        "steerMax_rad": 0.52,
+        "tyreRadius_m": 0.07
+      },
+      {
+        "name": "left wingtip",
+        "kind": "skid",
+        "position_m": [-4.0, 0.85, 0],
+        "spring_N_per_m": 50000,
+        "damper_Ns_per_m": 1000,
+        "travel_m": 0.05
+      },
+      {
+        "name": "right wingtip",
+        "kind": "skid",
+        "position_m": [4.0, 0.85, 0],
+        "spring_N_per_m": 50000,
+        "damper_Ns_per_m": 1000,
+        "travel_m": 0.05
+      }
+    ]
+  },
+  "inertia": {
+    "roll_kgm2": 232,
+    "pitch_kgm2": 189,
+    "yaw_kgm2": 402,
+    "rollYaw_kgm2": 0
   },
   "limits": {
     "vne_mps": 35.497
@@ -42,6 +96,10 @@
     "Official figures (jordanlakeaero.com, hirthengines.com): 120 sq ft wing, 20.6 kW (28 HP DIN) at 6500 rpm, empty 242-248 lb.",
     "Max weight 227 kg is assumed (not published).",
     "Belt reduction 2.5:1 with 60x28 in prop (user confirmed).",
-    "Fuel density 0.74 kg/L for 2-stroke petrol/oil mix."
+    "Fuel density 0.74 kg/L for 2-stroke petrol/oil mix.",
+    "Gear and inertia are Stage 3 engineering estimates, to be refined in Stage 4.",
+    "Gear: mains 0.25 m ahead of CG, 1.5 m track; steerable tailwheel (assumed, +/-30 deg) 3.75 m behind the mains; about 10 deg nose-up on the ground.",
+    "Struts sized for ~4 cm static compression on the mains and ~0.5 critical damping.",
+    "Inertia from Roskam radii of gyration for light singles (Rx 0.248, Ry 0.338, Rz 0.393) with an assumed 5.4 m length."
   ]
 }

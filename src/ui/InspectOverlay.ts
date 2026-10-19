@@ -11,13 +11,16 @@ export interface InspectInfo {
   speedMps: number;
   windFromDeg: number;
   windKt: number;
+  /** Extra status lines (wind preset, controls, test block). */
+  extra: string[];
   measure: Array<{ x: number; z: number }>;
   measureDistance: number | null;
 }
 
 const HELP =
-  'drag look · WASD move · R/F up/down · Shift fast · wheel speed\n' +
-  '1-6 views · M measure · [ ] wind speed · , . wind dir · X axes · P pause · H help';
+  'drag look · WASD move · R/F up/down · Shift fast · wheel speed · 1-6 views · M measure\n' +
+  '[ ] wind speed · , . wind dir · N wind preset · T throw test block · K keyboard flight · J mouse stick\n' +
+  'O controls/calibration · X axes · P pause · H help';
 
 /** Bottom-left readout for the inspection camera, plus a centre crosshair for measuring. */
 export class InspectOverlay {
@@ -69,6 +72,7 @@ export class InspectOverlay {
       `pos x${fmt(i.x)}  y${fmt(i.y)}  z${fmt(i.z)} m   hdg ${fmt(i.headingDeg, 3, 0)}°`,
       `fly speed ${fmt(mpsToKt(i.speedMps), 4, 0)} kt    wind ${fmt(i.windFromDeg, 3, 0).replace(/ /g, '0')}° / ${fmt(i.windKt, 2, 0)} kt`,
     ];
+    lines.push(...i.extra);
     if (i.measure.length) {
       const pts = i.measure.map((p) => `(${p.x.toFixed(1)}, ${p.z.toFixed(1)})`).join(' → ');
       const d = i.measureDistance === null ? '' : `  =  ${i.measureDistance.toFixed(1)} m`;
