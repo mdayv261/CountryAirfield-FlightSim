@@ -62,6 +62,7 @@ export class Hud {
       `AOA  ${alphaDeg.toFixed(0).padStart(4)}°`,
       `SLIP ${ball}`,
     ];
+    if (ac.autoRudderEnabled) lines.push('AUTO-RUDDER');
     if (stall) lines.push('** STALL **');
     const text = lines.join('\n');
     if (text !== this.lastText) {

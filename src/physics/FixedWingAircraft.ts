@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { AircraftData } from '../aircraft/schema';
 import { GRAVITY } from '../core/constants';
 import { AeroModel, emptyAeroOutput, type AeroOutput } from './aero';
+import { AutoRudder } from './autoRudder';
 import { Airframe, aircraftInertia } from './Airframe';
 import { ISA_P0, ISA_T0, R_AIR } from './atmosphere';
 import { Powerplant } from './powerplant';
@@ -55,6 +56,11 @@ export class FixedWingAircraft extends Airframe {
   readonly state: FlightState = { tas: 0, ias: 0, alpha: 0, beta: 0, loadFactor: 1, heightAgl: 0, verticalSpeed: 0 };
   /** Fuel on board, litres. */
   fuelL: number;
+  /** Auto-coordinated rudder pilot aid (adds to the pilot's rudder in flight). */
+  autoRudderEnabled = false;
+  readonly autoRudder = new AutoRudder();
+  /** Total rudder actually applied this step: pilot plus aid, -1..1 (for the model and gauges). */
+  rudderApplied = 0;
 
   private readonly propPosition: THREE.Vector3;
   /** +1 if the propeller turns clockwise seen from the cockpit (its torque rolls us left). */
@@ -82,7 +88,20 @@ export class FixedWingAircraft extends Airframe {
   override applyForces(env: PhysicsEnvironment, dt: number): void {
     const b = this.body;
     const p = this.pilot;
-    Object.assign(this.controls, { pedals: p.rudder, brakeLeft: p.brakeLeft, brakeRight: p.brakeRight });
+    // Pilot's rudder plus the auto-rudder aid, which works from last step's flight state.
+    let aid = 0;
+    if (this.autoRudderEnabled) {
+      aid = this.autoRudder.update(dt, {
+        beta: this.state.beta,
+        yawRate: -b.angularVelocity.y,
+        ias: this.state.ias,
+        onGround: this.gear.states.some((g) => g.inContact),
+      });
+    } else {
+      this.autoRudder.reset();
+    }
+    this.rudderApplied = Math.max(-1, Math.min(1, p.rudder + aid));
+    Object.assign(this.controls, { pedals: this.rudderApplied, brakeLeft: p.brakeLeft, brakeRight: p.brakeRight });
     super.applyForces(env, dt); // gear
 
     const air = env.air(b.position.y);
@@ -101,7 +120,7 @@ export class FixedWingAircraft extends Airframe {
         airVelocityBody: this.vAirBody,
         omegaBody: b.angularVelocity,
         density: air.density,
-        controls: { elevator: p.elevator, aileron: p.aileron, rudder: p.rudder },
+        controls: { elevator: p.elevator, aileron: p.aileron, rudder: this.rudderApplied },
         heightAboveGround: heightAgl,
         slipstreamPressure: pp.slipstreamPressure,
       },

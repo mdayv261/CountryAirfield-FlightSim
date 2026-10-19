@@ -44,6 +44,10 @@
   - Views (V cycles them): chase (follows heading, not bank), cockpit (pilot's eye, engine shake, drag to look),
     free camera. HUD on the left: IAS kt, ALT and AGL ft, VSI fpm, heading, rpm, throttle, fuel, G, AoA, slip ball,
     and a STALL warning 3° before the stalling angle.
+  - Auto-coordinated rudder (U, or the controls screen; saved; off by default; HUD shows AUTO-RUDDER):
+    a PI controller on sideslip plus a washed-out yaw damper (it damps sudden yaw but not a steady turn), added to
+    the pilot's rudder in flight only (inactive on the ground and fading in from 15 to 25 kt). In an aileron-only
+    30° turn at 40–50 kt the steady slip falls from about 4° to 0.1–0.2°, and the worst moment from about 9° to under 3°.
   - Spawns: 7 = gravel 36, 8 = grass 36, 9 = gravel 18, 0 = grass 18; Backspace resets. Keyboard flight is on by default
     (arrows stick, Z/C rudder, +/− throttle). Neutral stick trims about 40 kt at full power. Default wind: light northerly.
   - Automated flight tests (test pilot autopilot in `tests/helpers`), mass 216 kg, calm ISA:
@@ -91,7 +95,7 @@
 - Measured in Chrome on the Mac mini M4 (2560x1440 display at 75 Hz): 75 fps, mean frame 13.34 ms,
   p95 13.6 ms, max 14.4 ms over 300 frames, so no dropped frames. The browser locks to the display's 75 Hz refresh.
   Physics holds 120 Hz. P pauses (physics 0 Hz, render continues) and resumes cleanly. No console errors.
-- Tests: 133 passing (Stage 4 added aero, powerplant and Air-Bike performance/circuit suites; Stage 3 added rigid body, atmosphere, wind, gear and input suites). Highlights: free fall matches ½gt²;
+- Tests: 140 passing (auto-rudder and the joystick profile added since; Stage 4 added aero, powerplant and Air-Bike performance/circuit suites; Stage 3 added rigid body, atmosphere, wind, gear and input suites). Highlights: free fall matches ½gt²;
   a torque-free tumble (with the intermediate-axis flip) conserves energy to 1e-6; an undamped strut bounce returns to its
   release height within 1%; all three aircraft settle at rest on their wheels (loads sum to weight, struts compress by load/k,
   taildraggers 8–13° nose-up); braking stops in v²/(2μg) on gravel and grass; rolling coast distance follows the rolling

@@ -4,6 +4,8 @@ import { KeyboardControls } from './KeyboardControls';
 import type { Keyboard } from './keyboard';
 import { MouseStick } from './MouseStick';
 
+const AIDS_KEY = 'cfs.input.aids.v1';
+
 export type InputSource = 'keyboard' | 'mouse' | 'joystick';
 
 /**
@@ -20,11 +22,28 @@ export class InputManager {
   readonly mouse: MouseStick;
   /** Keyboard flight keys active (arrows etc. go to the controls, not the camera). */
   keyboardEnabled = false;
+  /** Pilot aids, saved between sessions. */
+  readonly aids = { autoRudder: false };
 
   constructor(keys: Keyboard, gamepads = new GamepadInput(), mouse = new MouseStick()) {
     this.keyboardControls = new KeyboardControls(keys);
     this.gamepads = gamepads;
     this.mouse = mouse;
+    try {
+      const saved = JSON.parse(localStorage.getItem(AIDS_KEY) ?? '{}');
+      if (typeof saved.autoRudder === 'boolean') this.aids.autoRudder = saved.autoRudder;
+    } catch {
+      // No storage (tests, private window): defaults apply.
+    }
+  }
+
+  setAutoRudder(on: boolean): void {
+    this.aids.autoRudder = on;
+    try {
+      localStorage.setItem(AIDS_KEY, JSON.stringify(this.aids));
+    } catch {
+      // Setting then lasts for this session only.
+    }
   }
 
   update(dt: number): void {

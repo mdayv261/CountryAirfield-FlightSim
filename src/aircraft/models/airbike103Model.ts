@@ -173,7 +173,7 @@ export class AirBikeModel {
     // Surfaces trail aft (+z) of their hinges. A negative rotation about x lifts the trailing
     // edge; a positive rotation about y swings it to the right.
     this.elevator.rotation.x = -p.elevator * a.elevatorMax_deg * deg; // stick back: trailing edge up
-    this.rudder.rotation.y = p.rudder * a.rudderMax_deg * deg; // right pedal: trailing edge right
+    this.rudder.rotation.y = this.aircraft.rudderApplied * a.rudderMax_deg * deg; // right pedal: trailing edge right
     this.aileronR.rotation.x = -p.aileron * a.aileronMax_deg * deg; // stick right: right aileron up
     this.aileronL.rotation.x = p.aileron * a.aileronMax_deg * deg; // ... and left aileron down
 

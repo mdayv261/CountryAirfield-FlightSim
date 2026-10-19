@@ -130,6 +130,7 @@ const loop = new GameLoop({
       // In the free camera the controls drive the Stage 3 test block.
       Object.assign(block.controls, { throttle: c.throttle, pedals: c.yaw, brakeLeft: c.brakeLeft, brakeRight: c.brakeRight });
     } else {
+      aircraft.autoRudderEnabled = input.aids.autoRudder;
       Object.assign(aircraft.pilot, {
         elevator: c.pitch,
         aileron: c.roll,
@@ -204,6 +205,7 @@ function statusLines(): string[] {
 }
 
 keyboard.onPress('KeyP', () => loop.togglePause());
+keyboard.onPress('KeyU', () => input.setAutoRudder(!input.aids.autoRudder));
 keyboard.onPress('KeyV', () => setView(VIEWS[(VIEWS.indexOf(view) + 1) % VIEWS.length]));
 keyboard.onPress('KeyE', () => (aircraft.powerplant.running ? aircraft.powerplant.stop() : aircraft.powerplant.start()));
 keyboard.onPress('Backspace', () => spawn(spawnIndex));

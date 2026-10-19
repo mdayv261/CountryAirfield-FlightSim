@@ -73,7 +73,7 @@ export class CalibrationScreen {
     if (!this.visible) return;
     const g = this.input.gamepads;
     this.runMode(g);
-    const key = JSON.stringify([g.devices.map((d) => [d.id, d.axes.length, d.buttons.length]), g.bindings, this.mode.kind, this.input.mouse.enabled, this.input.keyboardEnabled]);
+    const key = JSON.stringify([g.devices.map((d) => [d.id, d.axes.length, d.buttons.length]), g.bindings, this.mode.kind, this.input.mouse.enabled, this.input.keyboardEnabled, this.input.aids]);
     if (key !== this.layoutKey) {
       this.layoutKey = key;
       this.render();
@@ -158,6 +158,9 @@ export class CalibrationScreen {
       case 'mouse':
         this.input.mouse.enabled = !this.input.mouse.enabled;
         break;
+      case 'autoRudder':
+        this.input.setAutoRudder(!this.input.aids.autoRudder);
+        break;
       case 'keyboard':
         this.input.keyboardEnabled = !this.input.keyboardEnabled;
         break;
@@ -219,7 +222,9 @@ export class CalibrationScreen {
       <div class="status">${esc(this.status)}</div>
       <p><button data-action="defaults">Reset joystick bindings</button>
          <button data-action="keyboard" class="${this.input.keyboardEnabled ? 'on' : ''}">Keyboard flight keys: ${this.input.keyboardEnabled ? 'ON' : 'off'} (K)</button>
-         <button data-action="mouse" class="${this.input.mouse.enabled ? 'on' : ''}">Mouse stick: ${this.input.mouse.enabled ? 'ON' : 'off'} (J)</button></p>
+         <button data-action="mouse" class="${this.input.mouse.enabled ? 'on' : ''}">Mouse stick: ${this.input.mouse.enabled ? 'ON' : 'off'} (J)</button>
+         <button data-action="autoRudder" class="${this.input.aids.autoRudder ? 'on' : ''}">Auto-coordinated rudder: ${this.input.aids.autoRudder ? 'ON' : 'off'} (U)</button></p>
+      <p class="hint">Auto-rudder keeps the slip ball centred in flight. It adds to your own rudder, and is inactive on the ground and below about 15 kt.</p>
       <p class="hint">Keyboard: arrows = stick, Z/C = rudder, +/− or PgUp/PgDn = throttle, Home/End = prop lever, B = brakes.
       Mouse stick: pointer offset from screen centre; down = stick back.</p>`;
   }
