@@ -110,6 +110,9 @@
 
 ## Decisions recorded
 - Gyro engine: McCulloch 4318, 65 hp (not Subaru). Stages 7 and 9 will use CHT and a 2-stroke sound for the gyro.
+- Air-Bike landing roll (decided 2026-10-19): keep the physics as modelled and accept the gap to the 61 m target.
+  With no brakes, only drag, rolling resistance and the windmilling prop slow it (about 0.9 m/s² on average), giving
+  about 112 m on grass and 165 m on gravel from a 26 kt touchdown. Grass rolling resistance stays at 0.07.
 - Body axes are three.js-style (x right, y up, z aft) rather than the aero convention (x forward, y right, z down),
   so models and physics share one frame. Aero code in Stages 4–6 must use alpha = atan2(−v_y, −v_z) and beta from v_x.
 - Reported wind is the 10 m wind; aloft it is up to 1.6× stronger (shear). The windsock at about 10 m reads the reported value.
@@ -124,10 +127,7 @@
   fuel 151 L is usable (163 L total); gyro empty 113.4 kg (250 lb), max 249.5 kg (550 lb).
 
 ## Known issues / open questions
-- **Air-Bike landing roll does not meet the 61 m target**: the circuit tests measure about 112 m on grass and 165 m
-  on gravel from a 26 kt touchdown. With no brakes, only drag, rolling resistance and the windmilling prop slow it
-  (about 0.9 m/s² on average); 61 m would need about 1.5 m/s². Decision needed: accept, raise grass rolling
-  resistance (rougher strip), or assume a technique (engine off at touchdown). Not changed without asking.
+- Air-Bike landing roll is longer than the 61 m target (about 112 m on grass, 165 m on gravel). Accepted: see Decisions.
 - Hands-off the Air-Bike shows a lightly damped phugoid and a slow left turn from propeller torque. This is realistic;
   a pilot holds attitude and a touch of right stick.
 - Taildragger ground handling is directionally unstable (as it should be): steer with rudder from the start of the roll.
