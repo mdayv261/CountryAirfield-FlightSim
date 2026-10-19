@@ -15,12 +15,13 @@ describe('runways', () => {
     expect(b.min.z).toBeCloseTo(-300, 3);
   });
 
-  it('grass runway measures 600 x 30 m, parallel, 30 m east of the gravel', () => {
+  it('grass runway measures 600 x 30 m, parallel, centreline 30 m east of the gravel', () => {
     const g = box('runway-grass');
     const r = box('runway-gravel');
     expect(g.max.z - g.min.z).toBeCloseTo(600, 3);
     expect(g.max.x - g.min.x).toBeCloseTo(30, 3);
-    expect(g.min.x - r.max.x).toBeCloseTo(30, 3);
+    expect((g.min.x + g.max.x) / 2 - (r.min.x + r.max.x) / 2).toBeCloseTo(30, 3);
+    expect(g.min.x - r.max.x).toBeCloseTo(6, 3); // grass between the runways
     expect(g.min.z).toBeCloseTo(r.min.z, 3);
   });
 

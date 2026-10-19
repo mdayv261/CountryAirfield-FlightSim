@@ -16,7 +16,7 @@
     Heights fade to 0 over the last 1 km to meet a flat skirt that runs to the horizon.
   - `Heightfield.heightAt(x, z)` returns the exact rendered surface (same triangle split). Stage 3 gear contact should use it.
   - Farm dam ("turkey's nest") 900 m NE at (520, -720): 50 m radius, 3 m deep basin, 1.8 m earth bank, water at -0.6 m.
-  - Runways: gravel 600 x 18 m on x = 0; grass 600 x 30 m with mowing stripes, centreline x = 54 (30 m gap edge to edge).
+  - Runways: gravel 600 x 18 m on x = 0; grass 600 x 30 m with mowing stripes, centreline x = 30 (edges 6 m apart).
     White edge cones every 50 m on both edges of both runways (52). White gable threshold markers at all four ends (4 gravel, 6 grass).
   - Apron 40 x 60 m west of the gravel runway. Two L-shaped taxiways from the apron to each threshold (stub onto the gravel runway).
   - Three gable-roof hangars (doors face the apron), clubroom with veranda (deck, posts, rail, skillion roof), two-storey
@@ -44,7 +44,7 @@
 
 ## Decisions recorded
 - Gyro engine: McCulloch 4318, 65 hp (not Subaru). Stages 7 and 9 will use CHT and a 2-stroke sound for the gyro.
-- Grass runway "30 m east" means a 30 m gap between the runway edges, so the centrelines are 54 m apart.
+- Grass runway "30 m east" means the centrelines are 30 m apart (confirmed by user 2026-10-19), leaving 6 m of grass between the edges.
 - Pilot 90 kg; Air-Bike belt 2.5:1 with 60 in prop; field elevation 50 ft (15.24 m); default runway 36; knots on all aircraft.
 - Gyro rotor rpm: 200 minimum for take-off, 400 maximum.
 - Speeds are knots everywhere; mph is never used. Manufacturer mph figures are converted (x 0.869) and rounded down to a whole knot:

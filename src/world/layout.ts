@@ -12,8 +12,8 @@ export interface GroundRect {
 
 const GRAVEL_WIDTH = 18;
 const GRASS_WIDTH = 30;
-/** Edge-to-edge gap between the gravel and grass runways (CLAUDE.md "30 m east"). */
-const RUNWAY_GAP = 30;
+/** Grass runway centreline is this far east of the gravel centreline (CLAUDE.md "30 m east"). */
+const RUNWAY_CENTRELINE_SPACING = 30;
 const RUNWAY_LENGTH = 600;
 const TAXIWAY_WIDTH = 10;
 
@@ -21,7 +21,7 @@ export const RUNWAYS = {
   length: RUNWAY_LENGTH,
   gravel: { cx: 0, cz: 0, sizeX: GRAVEL_WIDTH, sizeZ: RUNWAY_LENGTH } satisfies GroundRect,
   grass: {
-    cx: GRAVEL_WIDTH / 2 + RUNWAY_GAP + GRASS_WIDTH / 2, // 54 m east of the gravel centreline
+    cx: RUNWAY_CENTRELINE_SPACING, // edges 6 m apart (30 - 18/2 - 30/2)
     cz: 0,
     sizeX: GRASS_WIDTH,
     sizeZ: RUNWAY_LENGTH,

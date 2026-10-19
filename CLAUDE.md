@@ -30,7 +30,7 @@ Super Decathlon 8KCAB (Lycoming AEIO-360 180 hp at 2700 rpm, 74 in constant-spee
   take-off roll 177 m, landing roll 152 m, \+6/-5 g, inverted fuel and oil, taildragger.
 
 \#\# Airfield  
-600 m x 18 m gravel runway 18/36; parallel 600 m x 30 m grass runway 30 m east.  
+600 m x 18 m gravel runway 18/36; parallel 600 m x 30 m grass runway 30 m east (centrelines 30 m apart).  
 Edge cones every 50 m. Two taxiways from apron to each threshold. Apron 60 x 40 m.  
 Three hangars, clubroom with veranda, small control tower with roof windsock.  
 Gentle hills to 60 m above field, tree lines, gum clusters, farm dam to the north-east.
