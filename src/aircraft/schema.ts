@@ -8,6 +8,16 @@
 //   So "forward" is -z. These are the three.js axes of the model, which means a
 //   level aircraft facing north has the identity orientation in the world
 //   (+X east, +Y up, +Z south). Roll is about z, pitch about x, yaw about y.
+//
+// ANGLES: radians, except tables and control throws whose keys end in _deg, which are
+// in degrees for readability and are converted when the physics loads them.
+//
+// AERODYNAMIC SIGN CONVENTIONS (the usual pilot's ones, whatever the body axes):
+//   alpha positive = nose above the flight path; beta positive = airflow from the right;
+//   roll moment positive = right wing down; pitch positive = nose up; yaw positive = nose right;
+//   p, q, r = roll, pitch, yaw rates in that same sense.
+//   Control deflections are positive in the direction that makes a positive moment
+//   (elevator: stick back; aileron: stick right; rudder: right pedal).
 
 export type AircraftType = 'fixedWing' | 'gyroplane';
 export type PropLayout = 'tractor' | 'pusher';
@@ -109,6 +119,97 @@ export interface Targets {
   landingRoll_m?: number;
 }
 
+/**
+ * Whole-aircraft aerodynamic data, coefficients on the wing reference area, span and chord.
+ * CL and CD come from tables against angle of attack (covering ±180° so any attitude works:
+ * normal flight, the stall break, and flat-plate flow beyond it). Everything else is a
+ * stability or control derivative: the change in a coefficient per radian of angle, or
+ * per unit of non-dimensional rate (p̂ = p b / 2V, q̂ = q c / 2V, r̂ = r b / 2V).
+ */
+export interface AeroData {
+  alpha_deg: number[];
+  CL: number[];
+  CD: number[];
+  /** Extra pitching moment at each alpha (stall pitch break), same grid. */
+  CmExtra: number[];
+  /** Multiplier on roll damping Clp at each alpha (drops, even reverses, when stalled), same grid. */
+  rollDampingFactor: number[];
+  /** Span efficiency for the induced-drag part, used for ground effect. */
+  oswald: number;
+  CLq: number;
+  CLde: number;
+  CYbeta: number;
+  CYdr: number;
+  Clbeta: number;
+  Clp: number;
+  /** Roll due to yaw rate grows with lift: Clr = Clr_perCL x CL. */
+  Clr_perCL: number;
+  Clda: number;
+  Cm0: number;
+  Cmalpha: number;
+  Cmq: number;
+  Cmde: number;
+  Cnbeta: number;
+  Cnr: number;
+  /** Yaw due to roll rate (adverse) grows with lift: Cnp = Cnp_perCL x CL. */
+  Cnp_perCL: number;
+  Cndr: number;
+  /** Adverse yaw from aileron deflection (negative = yaws away from the roll). */
+  Cnda: number;
+  /** Extra drag per radian² of control deflection. */
+  CDcontrol: number;
+  elevatorMax_deg: number;
+  aileronMax_deg: number;
+  rudderMax_deg: number;
+  /** Share of the propeller slipstream's extra dynamic pressure that reaches the tail (tractor). */
+  tailSlipstream: number;
+}
+
+/** Fixed-pitch or constant-speed propeller performance against advance ratio J = V / (n D). */
+export interface PropellerData {
+  /** Geometric pitch, m (for reference; the CT/CP tables carry the behaviour). */
+  pitch_m: number;
+  /** Hub position (thrust line), body axes, m. */
+  position_m: [number, number, number];
+  J: number[];
+  /** Thrust coefficient: T = CT ρ n² D⁴ (n in rev/s). */
+  CT: number[];
+  /** Power coefficient: P = CP ρ n³ D⁵. */
+  CP: number[];
+  /** Propeller moment of inertia about its shaft, kg m². */
+  inertia_kgm2: number;
+  /** Direction of rotation seen from the cockpit looking forward. */
+  rotation: 'clockwise' | 'anticlockwise';
+}
+
+export interface EngineData {
+  strokes: 2 | 4;
+  cylinders: number;
+  /** Full-throttle power curve: rpm against fraction of rated power. */
+  rpm: number[];
+  powerFraction: number[];
+  /** Fraction of full-throttle torque available with the throttle closed (idle air bleed), at idleRpm. */
+  idleThrottle: number;
+  /**
+   * Nominal idle speed. The idle bleed lets through a fixed amount of air per second, so above
+   * this rpm its torque falls in proportion (the engine brakes in a fast glide).
+   */
+  idleRpm: number;
+  /** Throttle (carburettor) response time constant, s. */
+  throttleLag_s: number;
+  /** Crankshaft, flywheel and drive pulley inertia, kg m² (engine side of the reduction). */
+  inertia_kgm2: number;
+  /** Internal friction and pumping torque: a + b x rpm, N m. */
+  frictionTorque_Nm: number;
+  frictionPerRpm_Nm: number;
+  /** Below this rpm a running engine dies. */
+  stallRpm: number;
+  /** Specific fuel consumption, kg per kWh. */
+  bsfc_kgPerkWh: number;
+  /** Belt or gearbox efficiency between crank and propeller. */
+  driveEfficiency: number;
+}
+
 export interface AircraftData {
   id: string;
   name: string;
@@ -118,6 +219,9 @@ export interface AircraftData {
   geometry: Geometry;
   gear: GearData;
   inertia: Inertia;
+  aero?: AeroData;
+  propeller?: PropellerData;
+  engine?: EngineData;
   limits: Limits;
   targets: Targets;
   /** Free-text provenance and assumptions; not used by the physics. */
@@ -229,6 +333,63 @@ export function validateAircraftData(raw: unknown): AircraftData {
       num(leg, path, 'tyreRadius_m', 0.02, 1, false);
       if (leg.brake !== undefined && typeof leg.brake !== 'boolean') problems.push(`${path}brake must be true or false`);
     });
+  }
+
+  // Flight-model sections are optional until each aircraft's stage, but checked if present.
+  const numArray = (obj: Rec, path: string, key: string, len?: number): void => {
+    const v = obj[key];
+    if (!Array.isArray(v) || !v.every((x) => typeof x === 'number' && Number.isFinite(x)))
+      problems.push(`${path}${key} must be an array of numbers`);
+    else if (len !== undefined && v.length !== len) problems.push(`${path}${key} must have ${len} entries (one per table row)`);
+  };
+  const ascending = (obj: Rec, path: string, key: string): void => {
+    const v = obj[key];
+    if (Array.isArray(v) && v.some((x, i) => i > 0 && x <= v[i - 1])) problems.push(`${path}${key} must be in ascending order`);
+  };
+  if (raw.aero !== undefined) {
+    const a = section('aero');
+    numArray(a, 'aero.', 'alpha_deg');
+    ascending(a, 'aero.', 'alpha_deg');
+    const n = Array.isArray(a.alpha_deg) ? a.alpha_deg.length : undefined;
+    for (const k of ['CL', 'CD', 'CmExtra', 'rollDampingFactor']) numArray(a, 'aero.', k, n);
+    for (const k of ['CLq', 'CLde', 'CYbeta', 'CYdr', 'Clbeta', 'Clp', 'Clr_perCL', 'Clda', 'Cm0', 'Cmalpha', 'Cmq', 'Cmde',
+      'Cnbeta', 'Cnr', 'Cnp_perCL', 'Cndr', 'Cnda', 'CDcontrol'])
+      num(a, 'aero.', k, -50, 50);
+    num(a, 'aero.', 'oswald', 0.3, 1);
+    for (const k of ['elevatorMax_deg', 'aileronMax_deg', 'rudderMax_deg']) num(a, 'aero.', k, 1, 60);
+    num(a, 'aero.', 'tailSlipstream', 0, 1);
+  }
+  if (raw.propeller !== undefined) {
+    const pr = section('propeller');
+    num(pr, 'propeller.', 'pitch_m', 0.1, 5);
+    const pos = pr.position_m;
+    if (!Array.isArray(pos) || pos.length !== 3 || !pos.every((v) => typeof v === 'number'))
+      problems.push('propeller.position_m must be three numbers');
+    numArray(pr, 'propeller.', 'J');
+    ascending(pr, 'propeller.', 'J');
+    const n = Array.isArray(pr.J) ? pr.J.length : undefined;
+    numArray(pr, 'propeller.', 'CT', n);
+    numArray(pr, 'propeller.', 'CP', n);
+    num(pr, 'propeller.', 'inertia_kgm2', 0.001, 50);
+    oneOf(pr, 'propeller.', 'rotation', ['clockwise', 'anticlockwise']);
+    if (typeof p.propDiameter_m !== 'number') problems.push('a propeller needs propulsion.propDiameter_m');
+  }
+  if (raw.engine !== undefined) {
+    const e = section('engine');
+    num(e, 'engine.', 'strokes', 2, 4);
+    num(e, 'engine.', 'cylinders', 1, 12);
+    numArray(e, 'engine.', 'rpm');
+    ascending(e, 'engine.', 'rpm');
+    numArray(e, 'engine.', 'powerFraction', Array.isArray(e.rpm) ? e.rpm.length : undefined);
+    num(e, 'engine.', 'idleThrottle', 0, 0.5);
+    num(e, 'engine.', 'idleRpm', 300, 3000);
+    num(e, 'engine.', 'throttleLag_s', 0, 2);
+    num(e, 'engine.', 'inertia_kgm2', 0.001, 10);
+    num(e, 'engine.', 'frictionTorque_Nm', 0, 200);
+    num(e, 'engine.', 'frictionPerRpm_Nm', 0, 1);
+    num(e, 'engine.', 'stallRpm', 100, 3000);
+    num(e, 'engine.', 'bsfc_kgPerkWh', 0.15, 1);
+    num(e, 'engine.', 'driveEfficiency', 0.5, 1);
   }
 
   const inertia = section('inertia');

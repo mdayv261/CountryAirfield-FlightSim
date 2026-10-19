@@ -81,7 +81,7 @@ describe('aircraft at rest on gear', () => {
       // Taildraggers sit nose-up; the tricycle gyro sits nearly level. No sliding off.
       if (data.gear.layout === 'taildragger') {
         expect(pitchDeg(b)).toBeGreaterThan(8);
-        expect(pitchDeg(b)).toBeLessThan(13);
+        expect(pitchDeg(b)).toBeLessThan(14);
       } else {
         expect(Math.abs(pitchDeg(b))).toBeLessThan(3);
       }

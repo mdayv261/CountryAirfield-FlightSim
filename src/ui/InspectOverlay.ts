@@ -18,9 +18,9 @@ export interface InspectInfo {
 }
 
 const HELP =
-  'drag look · WASD move · R/F up/down · Shift fast · wheel speed · 1-6 views · M measure\n' +
-  '[ ] wind speed · , . wind dir · N wind preset · T throw test block · K keyboard flight · J mouse stick\n' +
-  'O controls/calibration · X axes · P pause · H help';
+  'FLY: arrows stick · Z/C rudder · +/- throttle · E engine · V view (chase/cockpit/free) · 7 8 9 0 spawn gravel36/grass36/gravel18/grass18 · Bksp reset\n' +
+  'FREE CAM: drag look · WASD move · R/F up/down · Shift fast · wheel speed · 1-6 views · M measure · T throw test block\n' +
+  '[ ] wind speed · , . wind dir · N wind preset · K keyboard flight · J mouse stick · O controls · X axes · P pause · H help';
 
 /** Bottom-left readout for the inspection camera, plus a centre crosshair for measuring. */
 export class InspectOverlay {

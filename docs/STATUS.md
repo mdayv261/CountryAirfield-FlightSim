@@ -1,7 +1,7 @@
 # Project Status
 
-**Current stage:** 3 – Flight core (complete; exit check passed 2026-10-19)
-**Next stage:** 4 – Air-Bike 103
+**Current stage:** 4 – Air-Bike 103 (complete; automated exit checks pass 2026-10-19; your hand-flown circuits still to confirm)
+**Next stage:** 5 – Super Decathlon
 
 ## What works
 - Vite 8 + TypeScript 7 (strict) + Three.js r186 + Vitest 4. Scripts: `npm run dev`, `npm test`, `npm run build`, `npm run preview`, `npm run typecheck`.
@@ -26,6 +26,34 @@
   - Sky: gradient dome shader with a sun disc and glow (sun azimuth 25°, elevation 52°, northern sky), with matching horizon fog.
   - Altocumulus: rows of lumpy cloudlets (6 lobes each, instanced), 22 km square layer, every lobe between 3,000 and 4,500 m.
   - Sun shadows (2048 map) over an 800 m square around the airfield. Logarithmic depth buffer.
+- **Stage 4 Air-Bike 103** (flyable):
+  - `aero.ts`: coefficient build-up. CL/CD from ±180° alpha tables (stall break at 19°, flat-plate beyond), stability and
+    control derivatives (Cm_alpha, Cm_q, Cn_beta, Cl_beta, Cl_p, Cn_r, control powers, adverse yaw), stall pitch break and
+    loss of roll damping, ground effect (McCormick), propeller slipstream over the tail for elevator and rudder authority.
+  - `powerplant.ts`: Hirth F-33 brake-power curve (20.6 kW at 6500 rpm), 2.5:1 belt at 95%, shaft dynamics from a
+    torque balance, carburettor lag, idle air bleed that fades with rpm (engine braking), stalls below 1000 rpm,
+    E starts and stops it. Propeller thrust and torque from CT/CP vs advance ratio; windmills in a fast glide.
+    Torque reaction rolls left (clockwise prop). Fuel burn (BSFC 0.45 kg/kWh) updates mass and inertia.
+    Single-cylinder vibration (firing at rpm/60, about 100 Hz) is exposed as a level and frequency for cockpit
+    camera shake (and later sound), not as a force: it is above the 60 Hz a 120 Hz step can represent.
+  - `FixedWingAircraft`: airframe + gear + aero + powerplant + fuel; flight state (IAS, alpha, beta, G, AGL, VS).
+  - Data in `airbike103.json` (tables, derivatives, prop, engine); notes record each estimate and the tuning.
+  - Procedural model (`src/aircraft/models/airbike103Model.ts`): strut-braced high wing, steel-tube keel and booms,
+    open seat with pilot, Hirth with belt drive, wooden prop (blurs to a disc), tail feathers. Elevator, ailerons
+    and rudder move with the controls.
+  - Views (V cycles them): chase (follows heading, not bank), cockpit (pilot's eye, engine shake, drag to look),
+    free camera. HUD on the left: IAS kt, ALT and AGL ft, VSI fpm, heading, rpm, throttle, fuel, G, AoA, slip ball,
+    and a STALL warning 3° before the stalling angle.
+  - Spawns: 7 = gravel 36, 8 = grass 36, 9 = gravel 18, 0 = grass 18; Backspace resets. Keyboard flight is on by default
+    (arrows stick, Z/C rudder, +/− throttle). Neutral stick trims about 40 kt at full power. Default wind: light northerly.
+  - Automated flight tests (test pilot autopilot in `tests/helpers`), mass 216 kg, calm ISA:
+    stall 24.4 kt (target 24, +1.7%); cruise at 75% power 49.2 kt (47, +4.7%); best climb 498 fpm (475, +4.8%);
+    take-off roll 76.0 m on grass and 72.8 m on gravel (76, 0% and −4.2%, three-point technique);
+    full-power level speed 54.7 kt (Part 103 limit 55). Full left-hand 500 ft circuits with take-off, 5° approach,
+    flare and roll-out pass on gravel 36, grass 36, grass 18 and gravel 18 (touchdown 26 kt, 1.2 m/s sink, no strikes,
+    stops on the runway).
+  - Browser: 75 fps (vsync) in chase and cockpit views, mean 13.34 ms, p95 13.9 ms, no frame over 20 ms; physics
+    120 Hz at about 13 µs per step. No console errors.
 - **Stage 3 flight core** (`src/physics`, `src/input`):
   - `RigidBody`: 6-DOF, quaternion attitude, full inertia tensor, body axes x right / y up / z aft (forward −z, origin at CG;
     identity = level facing north). Translation uses semi-implicit Euler. Rotation uses Euler's equations including the
@@ -63,7 +91,7 @@
 - Measured in Chrome on the Mac mini M4 (2560x1440 display at 75 Hz): 75 fps, mean frame 13.34 ms,
   p95 13.6 ms, max 14.4 ms over 300 frames, so no dropped frames. The browser locks to the display's 75 Hz refresh.
   Physics holds 120 Hz. P pauses (physics 0 Hz, render continues) and resumes cleanly. No console errors.
-- Tests: 106 passing (Stage 3 added rigid body, atmosphere, wind, gear and input suites). Highlights: free fall matches ½gt²;
+- Tests: 133 passing (Stage 4 added aero, powerplant and Air-Bike performance/circuit suites; Stage 3 added rigid body, atmosphere, wind, gear and input suites). Highlights: free fall matches ½gt²;
   a torque-free tumble (with the intermediate-axis flip) conserves energy to 1e-6; an undamped strut bounce returns to its
   release height within 1%; all three aircraft settle at rest on their wheels (loads sum to weight, struts compress by load/k,
   taildraggers 8–13° nose-up); braking stops in v²/(2μg) on gravel and grass; rolling coast distance follows the rolling
@@ -96,6 +124,13 @@
   fuel 151 L is usable (163 L total); gyro empty 113.4 kg (250 lb), max 249.5 kg (550 lb).
 
 ## Known issues / open questions
+- **Air-Bike landing roll does not meet the 61 m target**: the circuit tests measure about 112 m on grass and 165 m
+  on gravel from a 26 kt touchdown. With no brakes, only drag, rolling resistance and the windmilling prop slow it
+  (about 0.9 m/s² on average); 61 m would need about 1.5 m/s². Decision needed: accept, raise grass rolling
+  resistance (rougher strip), or assume a technique (engine off at touchdown). Not changed without asking.
+- Hands-off the Air-Bike shows a lightly damped phugoid and a slow left turn from propeller torque. This is realistic;
+  a pilot holds attitude and a touch of right stick.
+- Taildragger ground handling is directionally unstable (as it should be): steer with rudder from the start of the roll.
 - McCulloch 4318 rated rpm (4100) and direct drive are assumptions; confirm in Stage 6.
 - Gyro figures with no Bensen/Vortech source: rotor 6.15 m (user-supplied; Wikipedia says 20 ft / 6.10 m), fuel 20 L,
   take-off roll 30 m (Amax Eagle figure; Wikipedia/Jane's gives 300 ft / 91 m for the B-8M). Kept as in CLAUDE.md.
@@ -111,6 +146,5 @@
 - Clouds are not fogged and stop at the layer edge (11 km out), so at high altitude the edge of the layer can be seen.
 
 ## Next step
-Stage 4: Air-Bike 103. Lift/drag tables with stall, control moments, stability derivatives, propeller and Hirth power curve
-with belt reduction, single-cylinder vibration, a procedural model, and tests for stall, cruise, climb and take-off roll vs CLAUDE.md.
-Build it on `Airframe` (add aero and engine forces in applyForces) and read the controls from `InputManager`.
+Confirm by hand: take off, fly a circuit and land on both runways (keys 7/8 to spawn). Then Stage 5: Super Decathlon
+(reuse `FixedWingAircraft`; add the constant-speed prop, P-factor, gyroscopic precession, spins and G limits).

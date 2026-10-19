@@ -15,6 +15,11 @@ import { TestBlock } from './physics/testBlock';
 import { WIND_PRESETS } from './physics/windPresets';
 import { TestBlockMesh } from './world/testBlockMesh';
 import { mpsToKt } from './core/units';
+import { FixedWingAircraft } from './physics/FixedWingAircraft';
+import { AirBikeModel } from './aircraft/models/airbike103Model';
+import { AircraftCamera, type AircraftView } from './ui/AircraftCamera';
+import { Hud } from './ui/Hud';
+import { RUNWAYS } from './world/layout';
 import { WINDSOCK } from './world/layout';
 
 const container = document.getElementById('app')!;
@@ -42,7 +47,7 @@ scene.add(measure.object);
 
 // Physics: ground, atmosphere and wind, stepped at the fixed 120 Hz rate.
 const physics = new PhysicsWorld({ heightAt: groundAt, surfaceAt });
-const DEFAULT_PRESET = 3;
+const DEFAULT_PRESET = 1; // light northerly: a gentle headwind on runway 36 for first flights
 let presetIndex = DEFAULT_PRESET;
 physics.wind.applyPreset(WIND_PRESETS[presetIndex]);
 const WIND_STEP_KT = 1;
@@ -79,12 +84,62 @@ const throwBlock = () => {
   if (!blockMesh.object.parent) scene.add(blockMesh.object);
 };
 
+// The Air-Bike 103. Spawn points on both runways, both directions (keys 7, 8, 9, 0).
+const aircraft = new FixedWingAircraft(AIRCRAFT.airbike103);
+const aircraftModel = new AirBikeModel(aircraft);
+scene.add(aircraftModel.object);
+physics.add(aircraft);
+const hud = new Hud(container, aircraft);
+const aircraftCam = new AircraftCamera(camera, renderer.domElement);
+/** Lined up a few metres inside each threshold. */
+const SPAWN_INSET_M = 8;
+const half = RUNWAYS.length / 2 - SPAWN_INSET_M;
+const SPAWNS = [
+  { name: 'gravel 36', x: RUNWAYS.gravel.cx, z: half, heading: 0 },
+  { name: 'grass 36', x: RUNWAYS.grass.cx, z: half, heading: 0 },
+  { name: 'gravel 18', x: RUNWAYS.gravel.cx, z: -half, heading: 180 },
+  { name: 'grass 18', x: RUNWAYS.grass.cx, z: -half, heading: 180 },
+];
+let spawnIndex = 0;
+const spawn = (i: number) => {
+  spawnIndex = i;
+  const s = SPAWNS[i];
+  aircraft.resetOnGround(s.x, s.z, s.heading, groundAt(s.x, s.z));
+  input.keyboardControls.state.throttle = 0;
+  aircraftCam.reset();
+};
+spawn(0);
+type View = AircraftView | 'free';
+const VIEWS: View[] = ['chase', 'cockpit', 'free'];
+let view: View = 'chase';
+const setView = (v: View) => {
+  view = v;
+  if (v !== 'free') aircraftCam.view = v;
+  aircraftCam.reset();
+};
+// Keyboard flight keys on from the start; arrows fly rather than look.
+input.keyboardEnabled = true;
+syncInputModes();
+
 let stepsThisFrame = 0;
 let lastFrameMs = performance.now();
 const loop = new GameLoop({
   step: (dt) => {
     const c = input.controls;
-    Object.assign(block.controls, { throttle: c.throttle, pedals: c.yaw, brakeLeft: c.brakeLeft, brakeRight: c.brakeRight });
+    if (view === 'free') {
+      // In the free camera the controls drive the Stage 3 test block.
+      Object.assign(block.controls, { throttle: c.throttle, pedals: c.yaw, brakeLeft: c.brakeLeft, brakeRight: c.brakeRight });
+    } else {
+      Object.assign(aircraft.pilot, {
+        elevator: c.pitch,
+        aileron: c.roll,
+        rudder: c.yaw,
+        throttle: c.throttle,
+        brakeLeft: c.brakeLeft,
+        brakeRight: c.brakeRight,
+      });
+      Object.assign(block.controls, { throttle: 0, pedals: 0, brakeLeft: 0, brakeRight: 0 });
+    }
     physics.step(dt);
     stepsThisFrame++;
   },
@@ -95,7 +150,12 @@ const loop = new GameLoop({
     lastFrameMs = now;
     input.update(dt);
     calibration.update();
-    freeCam.update(dt);
+    aircraftModel.update(alpha, loop.paused ? 0 : dt);
+    if (view === 'free') freeCam.update(dt);
+    else aircraftCam.update(aircraft, aircraftModel.object, dt);
+    hud.visible = view !== 'free';
+    const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(aircraftModel.object.quaternion);
+    hud.update(((Math.atan2(fwd.x, -fwd.z) * 180) / Math.PI + 360) % 360);
     // The windsock feels the same wind as everything else, at its mast-top height.
     windsock.update(physics.windAt(windsockTop, windsockAir), now / 1000);
     if (blockMesh.object.parent) blockMesh.update(alpha);
@@ -128,6 +188,10 @@ function statusLines(): string[] {
   lines.push(
     `controls ${modes}pitch ${s(c.pitch)} roll ${s(c.roll)} yaw ${s(c.yaw)} thr ${(c.throttle * 100).toFixed(0)}% brk ${c.brakeLeft.toFixed(1)}/${c.brakeRight.toFixed(1)} [${src}]`,
   );
+  const ac = aircraft.state;
+  lines.push(
+    `${aircraft.data.name} (${SPAWNS[spawnIndex].name}) view ${view}: ${mpsToKt(ac.ias).toFixed(0)} kt, ${aircraft.powerplant.out.engineRpm.toFixed(0)} rpm, fuel ${aircraft.fuelL.toFixed(1)} L`,
+  );
   if (blockMesh.object.parent) {
     const wheels = block.gear.states.slice(0, 3);
     const down = wheels.filter((st) => st.inContact).length;
@@ -140,6 +204,10 @@ function statusLines(): string[] {
 }
 
 keyboard.onPress('KeyP', () => loop.togglePause());
+keyboard.onPress('KeyV', () => setView(VIEWS[(VIEWS.indexOf(view) + 1) % VIEWS.length]));
+keyboard.onPress('KeyE', () => (aircraft.powerplant.running ? aircraft.powerplant.stop() : aircraft.powerplant.start()));
+keyboard.onPress('Backspace', () => spawn(spawnIndex));
+['Digit7', 'Digit8', 'Digit9', 'Digit0'].forEach((code, i) => keyboard.onPress(code, () => spawn(i)));
 keyboard.onPress('KeyM', () => measure.mark());
 keyboard.onPress('KeyH', () => inspect.toggleHelp());
 keyboard.onPress('KeyX', () => (world.axisMarker.visible = !world.axisMarker.visible));
@@ -177,7 +245,7 @@ window.addEventListener('keydown', (e) => {
 });
 
 // Handy for inspection from the browser console.
-Object.assign(window, { sim: { scene, camera, heightfield, freeCam, measure, renderer, physics, block, input, throwBlock } });
+Object.assign(window, { sim: { scene, camera, heightfield, freeCam, measure, renderer, physics, block, input, throwBlock, aircraft, spawn, setView } });
 
 console.info('Aircraft data loaded:', Object.values(AIRCRAFT).map((a) => a.name).join(', '));
 loop.start();
