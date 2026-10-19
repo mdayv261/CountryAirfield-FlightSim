@@ -35,10 +35,10 @@
     indicator, DG, MAP, G-meter with max/min tell-tale needles.
   - `src/cockpit/Panel.ts`: panel drawn to a canvas texture on a 3D panel in the model (unlit face, redrawn every frame
     in the cockpit view, 4 Hz otherwise). Layout and scales per aircraft in each JSON's `panel` block (knots, °C, rpm):
-    Layout (user, 2026-10-20): flight instruments across the top with the ASI centred, ALT left and VSI right (Decathlon:
-    G-meter, AI, ALT, ASI, VSI, DG); below, the slip ball under the ASI, compass to its left, engine gauges to its
-    right (Air-Bike RPM (ASI size) and fuel, with EGT left of the compass and CHT above it, pod 0.31 m wide; gyro RPM, rotor rpm LCD readout, fuel, EGT, CHT; Decathlon RPM, MAP, fuel,
-    CHT). The gyro's rotor tacho is a digital LCD (digits turn red outside 200–400 rpm). Open-cockpit pods stand on a post.
+    Layout (user, 2026-10-20): flight instruments across the top, the slip ball under the ASI, the heading gauge to its
+    left and engine gauges to its right. Air-Bike and gyro: ALT, ASI (centre), VSI on top, compass. Decathlon: G-meter,
+    ALT, AI (centre), ASI, VSI on top; DG in place of the wet compass; RPM, MAP, fuel and CHT in a 2x2 block; panel 0.50 m
+    wide. (Air-Bike RPM (ASI size) and fuel, with EGT left of the compass and CHT above it, pod 0.31 m wide; gyro RPM, rotor rpm LCD readout, fuel, EGT, CHT; Decathlon as above). The gyro's rotor tacho is a digital LCD (digits turn red outside 200–400 rpm). Open-cockpit pods stand on a post.
   - Engine temperatures (`src/physics/engineTemps.ts`): CHT settles where combustion heat (∝ charge flow, manifold
     pressure x rpm) balances fin cooling (∝ cooling-air speed^0.5, airspeed plus part of the slipstream), with a
     1–2 min time constant; EGT follows power in seconds. About 200–210 °C after a full-power climb, 65–80 °C after a
@@ -237,7 +237,8 @@
 - Gauge markings for the Air-Bike and gyro (and the Hirth/McCulloch CHT/EGT limits) are assumed; no published panel
   data. Engine temperature figures are estimates, not manufacturer data.
 - No magnetic variation: compass, DG and HUD all show true heading.
-- The Decathlon cabin interior is minimal (panel box only); on the ground the taildragger's nose hides the runway, as real.
+- The Decathlon cabin interior is minimal (panel box only). Cowl top lowered to the panel top (firewall 0.38 m) and the
+  cabin glazing is a separate 20%-opacity mesh (was opaque), so the pilot sees out ahead and to the sides (2026-10-20).
 - Gyro hands-off: power changes still turn it gently (full power ~25°/min left, idle ~45°/min right) because prop
   torque changes with power; the bank stays under 4°.
 - Gyro rotor overspeeds (> 400 rpm) in a near-vertical slow descent; the warning shows it. Keep some airspeed.

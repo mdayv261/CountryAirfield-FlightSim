@@ -23,12 +23,14 @@ const C = {
   helmet: 0xe8e8e8,
 };
 const WING = { y: 0.86, zLE: -0.4, thickness: 0.19, aileronChord: 0.38, aileronStart: 2.3, strutX: 2.9 };
+/** Cabin glazing opacity: a light tint, so the pilot sees out through windscreen and side windows. */
+const GLASS_OPACITY = 0.2;
 const TAIL = { z: 3.95, y: 0.22, stabSpan: 3.0, stabChord: 0.62, elevChord: 0.42, finHeight: 0.85, finChord: 0.55, rudderChord: 0.45 };
 
 /** Fuselage cross-sections from the spinner to the tail post. */
 const FUSELAGE: Section[] = [
   { z: -2.0, w: 0.55, yBot: -0.25, yTop: 0.3 }, // cowl front
-  { z: -1.15, w: 0.86, yBot: -0.42, yTop: 0.48 }, // firewall
+  { z: -1.15, w: 0.86, yBot: -0.42, yTop: 0.38 }, // firewall: cowl top level with the panel top
   { z: -0.4, w: 0.86, yBot: -0.48, yTop: 0.84 }, // cabin under the wing
   { z: 1.0, w: 0.82, yBot: -0.46, yTop: 0.84 }, // rear of cabin
   { z: 2.6, w: 0.45, yBot: -0.25, yTop: 0.5 },
@@ -59,7 +61,9 @@ export class DecathlonModel extends AircraftModel {
     for (let i = 0; i < FUSELAGE.length - 1; i++) loft(b, FUSELAGE[i], FUSELAGE[i + 1], i === 0 ? C.red : C.white);
     for (const s of [-1, 1]) slab(b, s * 0.43, -0.05, 0.3, 0.02, 0.1, 2.6, C.red);
 
-    // Cabin glazing: sloping windscreen, side windows for the tandem seats, skylight in the wing root.
+    // Cabin glazing: sloping windscreen and side windows for the tandem seats, built as a
+    // separate see-through mesh so the pilot can look out.
+    const glass = new ColouredMeshBuilder();
     // Windscreen: lies along the fuselage top from the firewall up to the wing's leading edge.
     const [fw, wr] = [FUSELAGE[1], FUSELAGE[2]];
     const rise = wr.yTop - fw.yTop;
@@ -67,10 +71,10 @@ export class DecathlonModel extends AircraftModel {
     const screen = new THREE.Matrix4()
       .makeRotationX(-Math.atan2(rise, run)) // front edge down
       .setPosition(0, (fw.yTop + wr.yTop) / 2 + 0.012, (fw.z + wr.z) / 2);
-    b.add(new THREE.BoxGeometry(fw.w * 0.92, 0.02, Math.hypot(rise, run)), C.glass, screen);
+    glass.add(new THREE.BoxGeometry(fw.w * 0.92, 0.02, Math.hypot(rise, run)), C.glass, screen);
     for (const s of [-1, 1]) {
-      slab(b, s * 0.435, 0.42, -0.55, 0.02, 0.42, 0.7, C.glass); // front seat window
-      slab(b, s * 0.425, 0.42, 0.35, 0.02, 0.42, 0.75, C.glass); // rear seat window
+      slab(glass, s * 0.435, 0.42, -0.55, 0.02, 0.42, 0.7, C.glass); // front seat window
+      slab(glass, s * 0.425, 0.42, 0.35, 0.02, 0.42, 0.75, C.glass); // rear seat window
       slab(b, s * 0.44, 0.42, -0.12, 0.03, 0.46, 0.06, C.frame); // door pillar
     }
     // Pilot in the front seat.
@@ -118,6 +122,12 @@ export class DecathlonModel extends AircraftModel {
     for (const s of [-1, 1]) slab(b, s * (TAIL.stabSpan / 2 - 0.2), TAIL.y, TAIL.z + TAIL.stabChord / 2, 0.4, 0.08, TAIL.stabChord + 0.02, C.red);
     slab(b, 0, TAIL.y + TAIL.finHeight / 2, TAIL.z + TAIL.finChord / 2, 0.05, TAIL.finHeight, TAIL.finChord, C.white);
     this.addBody(b);
+    const glazing = new THREE.Mesh(
+      glass.build(),
+      new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true, opacity: GLASS_OPACITY, depthWrite: false }),
+    );
+    glazing.renderOrder = 1; // after the opaque parts, so they show through it
+    this.object.add(glazing);
 
     // Moving surfaces.
     this.elevator = hingedX(TAIL.stabSpan, TAIL.elevChord, 0.04, C.white);

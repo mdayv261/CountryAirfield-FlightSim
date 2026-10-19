@@ -123,10 +123,11 @@ describe('gauges agree with the HUD', () => {
   }
 
   it('every panel carries the stage 7 instruments', () => {
-    const base = ['asi', 'altimeter', 'vsi', 'tacho', 'slip', 'compass', 'fuel'];
+    const base = ['asi', 'altimeter', 'vsi', 'tacho', 'slip', 'fuel'];
     const extra = {
-      airbike103: ['egt', 'cht'],
-      bensenB8M: ['rotorTacho', 'cht', 'egt'],
+      airbike103: ['compass', 'egt', 'cht'],
+      bensenB8M: ['compass', 'rotorTacho', 'cht', 'egt'],
+      // The Decathlon's DG takes the wet compass's place (user, 2026-10-20).
       decathlon8kcab: ['attitude', 'dg', 'map', 'gmeter'],
     };
     for (const [id, more] of Object.entries(extra)) {
@@ -136,30 +137,36 @@ describe('gauges agree with the HUD', () => {
     }
   });
 
-  it('panel layout: flight instruments on top with the ASI centred, ALT left, VSI right; slip under the ASI, compass left of it, engine gauges right', () => {
-    const flight = ['asi', 'altimeter', 'vsi', 'attitude', 'dg', 'gmeter'];
+  it('panel layout: flight instruments across the top, slip under the ASI, heading gauge left of it, engine gauges right', () => {
+    const flight = ['asi', 'altimeter', 'vsi', 'attitude', 'gmeter'];
     for (const ac of Object.values(AIRCRAFT)) {
       const gs = ac.panel!.gauges;
       const at = (k: string) => gs.find((g) => g.kind === k)!.at_m;
-      const asi = at('asi');
-      expect(asi[0], ac.id).toBe(0);
+      const top = at('asi')[1];
+      for (const g of gs) if (flight.includes(g.kind)) expect(g.at_m[1], `${ac.id} ${g.kind}`).toBe(top);
+      // Centre gauge: the AI where fitted (Decathlon), else the ASI; ALT left of it, VSI right of the ASI.
+      const centre = gs.some((g) => g.kind === 'attitude') ? 'attitude' : 'asi';
+      expect(at(centre)[0], ac.id).toBe(0);
       expect(at('altimeter')[0]).toBeLessThan(0);
-      expect(at('altimeter')[1]).toBe(asi[1]);
-      expect(at('vsi')[0]).toBeGreaterThan(0);
-      expect(at('vsi')[1]).toBe(asi[1]);
-      for (const g of gs) if (flight.includes(g.kind)) expect(g.at_m[1], `${ac.id} ${g.kind}`).toBe(asi[1]);
+      expect(at('asi')[0]).toBeGreaterThanOrEqual(0);
+      expect(at('vsi')[0]).toBeGreaterThan(at('asi')[0]);
       const slip = at('slip');
-      expect(slip[0]).toBe(0);
-      expect(slip[1]).toBeLessThan(asi[1]);
-      expect(at('compass')[0]).toBeLessThan(0);
+      expect(slip[0]).toBe(at('asi')[0]);
+      expect(slip[1]).toBeLessThan(top);
+      const heading = gs.some((g) => g.kind === 'compass') ? 'compass' : 'dg';
+      expect(at(heading)[0]).toBeLessThan(slip[0]);
+      expect(at(heading)[1]).toBeLessThan(top);
       // Air-Bike (user, 2026-10-20): EGT left of the compass with CHT above it, top row.
       const leftColumn = ac.id === 'airbike103' ? ['egt', 'cht'] : [];
       for (const g of gs)
-        if (!flight.includes(g.kind) && !leftColumn.includes(g.kind) && g.kind !== 'slip' && g.kind !== 'compass') {
-          expect(g.at_m[0], `${ac.id} ${g.kind}`).toBeGreaterThan(0);
-          expect(g.at_m[1], `${ac.id} ${g.kind}`).toBeLessThan(asi[1]);
+        if (![...flight, ...leftColumn, 'slip', heading].includes(g.kind)) {
+          expect(g.at_m[0], `${ac.id} ${g.kind}`).toBeGreaterThan(slip[0]);
+          expect(g.at_m[1], `${ac.id} ${g.kind}`).toBeLessThan(top);
         }
     }
+    const deca = AIRCRAFT.decathlon8kcab.panel!;
+    expect(deca.gauges.map((g) => g.kind)).not.toContain('compass');
+    expect(deca.size_m[0]).toBeLessThan(0.74);
     const bike = (k: string) => AIRCRAFT.airbike103.panel!.gauges.find((g) => g.kind === k)!;
     expect(bike('egt').at_m[0]).toBeLessThan(bike('compass').at_m[0]);
     expect(bike('egt').at_m[1]).toBe(bike('compass').at_m[1]);

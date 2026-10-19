@@ -167,14 +167,14 @@
   },
   "panel": {
     "position_m": [0, 0.27, -1.08],
-    "size_m": [0.74, 0.26],
+    "size_m": [0.5, 0.26],
     "tilt_deg": 10,
     "colour": "#33363a",
     "lookDown_deg": 12,
     "gauges": [
       {
         "kind": "gmeter",
-        "at_m": [-0.249, 0.05],
+        "at_m": [-0.166, 0.055],
         "diameter_m": 0.075,
         "min": -5,
         "max": 10,
@@ -182,18 +182,18 @@
         "redline": 6
       },
       {
-        "kind": "attitude",
-        "at_m": [-0.166, 0.05],
+        "kind": "altimeter",
+        "at_m": [-0.083, 0.055],
         "diameter_m": 0.075
       },
       {
-        "kind": "altimeter",
-        "at_m": [-0.083, 0.05],
+        "kind": "attitude",
+        "at_m": [0, 0.055],
         "diameter_m": 0.075
       },
       {
         "kind": "asi",
-        "at_m": [0, 0.05],
+        "at_m": [0.083, 0.055],
         "diameter_m": 0.075,
         "max": 200,
         "green": [49, 139],
@@ -202,51 +202,46 @@
       },
       {
         "kind": "vsi",
-        "at_m": [0.083, 0.05],
+        "at_m": [0.166, 0.055],
         "diameter_m": 0.075,
         "max": 2000
       },
       {
         "kind": "dg",
-        "at_m": [0.166, 0.05],
+        "at_m": [0, -0.05],
         "diameter_m": 0.075
       },
       {
-        "kind": "compass",
-        "at_m": [-0.085, -0.05],
-        "diameter_m": 0.065
-      },
-      {
         "kind": "slip",
-        "at_m": [0, -0.055],
+        "at_m": [0.083, -0.055],
         "diameter_m": 0.07
       },
       {
         "kind": "tacho",
-        "at_m": [0.085, -0.05],
-        "diameter_m": 0.07,
+        "at_m": [0.15, -0.035],
+        "diameter_m": 0.058,
         "max": 3500,
         "green": [2000, 2700],
         "redline": 2700
       },
       {
         "kind": "map",
-        "at_m": [0.16, -0.05],
-        "diameter_m": 0.07,
+        "at_m": [0.21, -0.035],
+        "diameter_m": 0.058,
         "min": 10,
         "max": 35,
         "green": [15, 29]
       },
       {
         "kind": "fuel",
-        "at_m": [0.235, -0.05],
-        "diameter_m": 0.065,
+        "at_m": [0.15, -0.095],
+        "diameter_m": 0.058,
         "max": 151
       },
       {
         "kind": "cht",
-        "at_m": [0.305, -0.05],
-        "diameter_m": 0.06,
+        "at_m": [0.21, -0.095],
+        "diameter_m": 0.058,
         "min": 50,
         "max": 300,
         "green": [150, 245],
@@ -288,6 +283,6 @@
     "Engine: Lycoming AEIO-360-H1B, 180 hp at 2700 rpm, fuel injected with inverted fuel and oil (limits.invertedSystems).",
     "Rudder power falls to about 40% beyond 35 deg alpha (fin in the stalled wing's wake), which sets a realistic spin rate.",
     "Pitch break past the stall (CmExtra) is sized so full aft stick without rotation settles just above the stall (about 26 deg alpha): no stable deep stall. In a spin the inertial pitch-up from roll and yaw rates holds a higher alpha.",
-    "Panel (Stage 7): six-pack plus engine gauges and G-meter. Markings from CLAUDE.md speeds (green 49-139 kt, yellow 139-173 kt, red line 173 kt), red line 2,700 rpm, +6/-5 g; Lycoming CHT limit 260 C (500 F)."
+    "Panel (Stage 7, layout per user 2026-10-20): top row G-meter, ALT, AI (centre), ASI, VSI; DG in place of the wet compass, slip ball under the ASI, engine gauges (RPM, MAP, fuel, CHT) in a 2x2 block to the right. Markings from CLAUDE.md speeds (green 49-139 kt, yellow 139-173 kt, red line 173 kt), red line 2,700 rpm, +6/-5 g; Lycoming CHT limit 260 C (500 F)."
   ]
 }
