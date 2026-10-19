@@ -141,7 +141,88 @@
     "frictionPerRpm_Nm": 0.0002,
     "stallRpm": 1000,
     "bsfc_kgPerkWh": 0.45,
-    "driveEfficiency": 0.95
+    "driveEfficiency": 0.95,
+    "temps": {
+      "chtClimb_C": 227,
+      "refCoolingSpeed_mps": 30,
+      "chtTimeConstant_s": 60,
+      "slipstreamCooling": 0.7,
+      "egtIdle_C": 320,
+      "egtFull_C": 620,
+      "egtTimeConstant_s": 3
+    }
+  },
+  "panel": {
+    "position_m": [0, 0.1, -0.75],
+    "size_m": [0.4, 0.15],
+    "tilt_deg": 20,
+    "colour": "#2b2b2b",
+    "lookDown_deg": 10,
+    "postTo_m": [0, -0.55, -0.85],
+    "gauges": [
+      {
+        "kind": "asi",
+        "at_m": [-0.15, 0.035],
+        "diameter_m": 0.062,
+        "max": 80,
+        "green": [24, 60],
+        "yellow": [60, 69],
+        "redline": 69
+      },
+      {
+        "kind": "altimeter",
+        "at_m": [-0.08, 0.035],
+        "diameter_m": 0.062
+      },
+      {
+        "kind": "vsi",
+        "at_m": [-0.01, 0.035],
+        "diameter_m": 0.062,
+        "max": 1000
+      },
+      {
+        "kind": "tacho",
+        "at_m": [0.06, 0.035],
+        "diameter_m": 0.062,
+        "max": 8000,
+        "green": [2500, 6500],
+        "redline": 6500
+      },
+      {
+        "kind": "egt",
+        "at_m": [0.135, 0.04],
+        "diameter_m": 0.05,
+        "min": 200,
+        "max": 800,
+        "green": [480, 640],
+        "redline": 650
+      },
+      {
+        "kind": "compass",
+        "at_m": [-0.15, -0.04],
+        "diameter_m": 0.055
+      },
+      {
+        "kind": "slip",
+        "at_m": [-0.08, -0.045],
+        "diameter_m": 0.05
+      },
+      {
+        "kind": "fuel",
+        "at_m": [-0.01, -0.04],
+        "diameter_m": 0.05,
+        "max": 19
+      },
+      {
+        "kind": "cht",
+        "at_m": [0.135, -0.04],
+        "diameter_m": 0.05,
+        "min": 50,
+        "max": 300,
+        "green": [120, 230],
+        "redline": 250
+      }
+    ]
   },
   "limits": {
     "vne_mps": 35.497
@@ -171,6 +252,7 @@
     "Propeller 60x28 in fixed-pitch wood: CT/CP curves shaped for P/D 0.47, peak efficiency ~0.75 near J 0.4-0.5; loading set so static rpm is ~5300 and full-power level rpm ~6700 (typical F-33 installation).",
     "Wing rigging incidence 1.6 deg (user check 2026-10-19): fuselage attitude reads 0 deg in level flight at 75% throttle (~47 kt), about +10 deg in the full-power climb at Vy and about -10 deg in a 45 kt idle descent.",
     "Engine response halved at the user's request (2026-10-19): crank 0.006 and prop 0.125 kg m2 inertia, carburettor lag 0.075 s. Idle to full rpm about 1.1 s static and 0.65 s at 45 kt; full to idle about 1.3 s and 0.8 s.",
-    "Tuned (Stage 4) so cruise at 75% power ~47 kt and full-power level speed stays under the Part 103 limit of 55 kt."
+    "Tuned (Stage 4) so cruise at 75% power ~47 kt and full-power level speed stays under the Part 103 limit of 55 kt.",
+    "Panel (Stage 7): instrument pod ahead of the stick. Gauge markings assumed (no published Air-Bike panel): green 24-60 kt, red line Vne 69 kt; Hirth F-33 red line 6,500 rpm, CHT limit 250 C, EGT limit 650 C (assumed, check hirthengines.com)."
   ]
 }

@@ -27,8 +27,8 @@ const C = {
 const KEEL_Y = -0.55;
 
 export class GyroModel extends AircraftModel {
-  /** Pilot's eye: sitting in the open seat ahead of the mast. */
-  readonly eye = v(0, 0.22, -0.32);
+  /** Pilot's eye: at the front of the helmet, in the open seat ahead of the mast. */
+  readonly eye = v(0, 0.3, -0.45);
   readonly chase = { back: 10, up: 3.2 };
   /** Rotor group: oriented along the disc axis, spun about its own up axis. */
   private readonly rotorGroup = new THREE.Group();
@@ -57,7 +57,9 @@ export class GyroModel extends AircraftModel {
     b.add(new THREE.SphereGeometry(0.12, 8, 6), C.helmet, new THREE.Matrix4().makeTranslation(0, 0.3, -0.3));
     slab(b, 0, 0.28, -0.42, 0.16, 0.06, 0.03, C.black); // visor
     tube(b, v(0, KEEL_Y, -0.55), v(0, -0.1, -0.6), 0.015, C.black); // control stick (to the head via push rods)
-    tube(b, v(0, -0.1, -0.6), v(0, HUB[1] - 0.1, HUB[2]), 0.01, C.alu); // control rod up the mast
+    // Push rods from the stick base aft along the keel, then up beside the mast to the head.
+    tube(b, v(0.05, KEEL_Y + 0.05, -0.55), v(0.05, KEEL_Y + 0.05, HUB[2]), 0.01, C.alu);
+    tube(b, v(0.05, KEEL_Y + 0.05, HUB[2]), v(0.05, HUB[1] - 0.1, HUB[2]), 0.01, C.alu);
     slab(b, 0, KEEL_Y + 0.05, -1.05, 0.7, 0.04, 0.05, C.black); // rudder bar
     slab(b, 0, -0.25, 0.2, 0.36, 0.3, 0.22, C.yellow); // fuel tank behind the seat
 

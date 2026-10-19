@@ -121,6 +121,26 @@ export class GamepadInput {
     return BIPOLAR[channel] ? bipolarAxis(raw, b.cal) : unipolarAxis(raw, b.cal);
   }
 
+  /**
+   * Hat switch (POV) direction from the first device that has one: x right +1, y up +1, both
+   * 0 when centred. Known joysticks report it as one axis (see DEVICE_PROFILES); standard-
+   * mapped gamepads use the d-pad buttons.
+   */
+  hat(): { x: number; y: number } {
+    for (const d of this.devices) {
+      const axis = profileFor(d)?.hatAxis;
+      if (axis !== undefined && d.axes[axis] !== undefined) {
+        const h = decodeHatAxis(d.axes[axis]);
+        if (h.x !== 0 || h.y !== 0) return h;
+      } else if (d.mapping === 'standard' && d.buttons.length >= 16) {
+        const x = (d.buttons[15] > 0.5 ? 1 : 0) - (d.buttons[14] > 0.5 ? 1 : 0);
+        const y = (d.buttons[12] > 0.5 ? 1 : 0) - (d.buttons[13] > 0.5 ? 1 : 0);
+        if (x !== 0 || y !== 0) return { x, y };
+      }
+    }
+    return { x: 0, y: 0 };
+  }
+
   /** Bind a channel to input number `input` (axes first, then buttons) of a device. */
   bind(channel: Channel, d: DeviceSnapshot, input: number): void {
     const kind = input < d.axes.length ? 'axis' : 'button';
@@ -213,6 +233,21 @@ export class GamepadInput {
 interface DeviceProfile {
   match: RegExp;
   bindings(d: DeviceSnapshot): Bindings;
+  /** Axis that carries the hat switch, if any. */
+  hatAxis?: number;
+}
+
+/**
+ * A hat switch reported as a single axis (how browsers expose most joysticks' POV hat):
+ * eight positions from −1 (up) in steps of 2/7 clockwise to +1 (up-left); centred reads
+ * outside ±1 (about 1.29).
+ */
+export function decodeHatAxis(v: number): { x: number; y: number } {
+  if (!Number.isFinite(v) || Math.abs(v) > 1 + 1 / 7) return { x: 0, y: 0 };
+  const step = Math.round(((v + 1) * 7) / 2) % 8; // 0 = up, 2 = right, 4 = down, 6 = left
+  const a = (step * Math.PI) / 4;
+  // (+ 0 turns a rounded −0 into 0.)
+  return { x: Math.round(Math.sin(a)) + 0, y: Math.round(Math.cos(a)) + 0 };
 }
 
 const axisBinding = (d: DeviceSnapshot, index: number, deadzone: number, invert = false): Binding => ({
@@ -236,6 +271,7 @@ export const DEVICE_PROFILES: DeviceProfile[] = [
     // both toe brakes; the sim shares a single brake out with the rudder for steering.
     // Thumb button (button 1) = gyro prerotator (hold).
     match: /extreme 3d/i,
+    hatAxis: 9,
     bindings: (d) => ({
       roll: axisBinding(d, 0, GAMEPAD.deadzone),
       pitch: axisBinding(d, 1, GAMEPAD.deadzone),

@@ -1,7 +1,7 @@
 # Project Status
 
-**Current stage:** 6 – Gyro (complete; automated exit checks pass 2026-10-19; hand-flown gyro still to confirm)
-**Next stage:** 7 – Cockpits and views
+**Current stage:** 7 – Cockpits, HUD and views (complete; exit checks pass 2026-10-20)
+**Next stage:** 8 (awaiting the brief)
 
 ## What works
 - Vite 8 + TypeScript 7 (strict) + Three.js r186 + Vitest 4. Scripts: `npm run dev`, `npm test`, `npm run build`, `npm run preview`, `npm run typecheck`.
@@ -26,6 +26,31 @@
   - Sky: gradient dome shader with a sun disc and glow (sun azimuth 25°, elevation 52°, northern sky), with matching horizon fog.
   - Altocumulus: rows of lumpy cloudlets (6 lobes each, instanced), 22 km square layer, every lobe between 3,000 and 4,500 m.
   - Sun shadows (2048 map) over an 800 m square around the airfield. Logarithmic depth buffer.
+- **Stage 7 cockpits, HUD and views** (2026-10-20):
+  - `src/cockpit/instruments.ts`: one set of indicated values (IAS, altitude, AGL, VSI with 1 s lag, true heading,
+    wet compass with 0.3 s damping, pitch/bank, slip ball from lateral specific force, G with tell-tales, wind at the
+    aircraft, rpm, rotor rpm, MAP, fuel, CHT/EGT). The panel gauges and the HUD both read it, so they always agree.
+  - `src/cockpit/gauges.ts`: Canvas-2D gauges: ASI with green/yellow arcs and red line, 3-pointer altimeter, VSI,
+    tacho, rotor tacho, inclinometer, wet compass (reverse-reading card, as the real one), fuel, EGT, CHT, attitude
+    indicator, DG, MAP, G-meter with max/min tell-tale needles.
+  - `src/cockpit/Panel.ts`: panel drawn to a canvas texture on a 3D panel in the model (unlit face, redrawn every frame
+    in the cockpit view, 4 Hz otherwise). Layout and scales per aircraft in each JSON's `panel` block (knots, °C, rpm):
+    Air-Bike pod (ASI, ALT, VSI, RPM, EGT, compass, slip, fuel, CHT), gyro pod (plus rotor rpm), Decathlon six-pack
+    (ASI, AI, ALT, slip, DG, VSI) plus G-meter, RPM, MAP, compass, fuel, CHT. Open-cockpit pods stand on a post.
+  - Engine temperatures (`src/physics/engineTemps.ts`): CHT settles where combustion heat (∝ charge flow, manifold
+    pressure x rpm) balances fin cooling (∝ cooling-air speed^0.5, airspeed plus part of the slipstream), with a
+    1–2 min time constant; EGT follows power in seconds. About 200–210 °C after a full-power climb, 65–80 °C after a
+    5 min idle glide; a reset starts warmed up (120–160 °C). Gyro: McCulloch is air-cooled, so CHT/EGT replace the
+    brief's coolant gauge (that was for a Subaru).
+  - Views (`src/ui/AircraftCamera.ts`): 1 cockpit (mouse drag or joystick hat to look around: sideways, up, back;
+    springs back to ahead; per-aircraft look-down so the panel shows), 2 chase, 3 tower (from outside the cab glass,
+    auto-zoom), 4 fly-by (camera set ahead of the track, alternating sides, moves on once passed), 5 free camera
+    (whose own viewpoints keep keys 1–6). V cycles. Hat: Extreme 3D Pro axis 9, or a gamepad's d-pad.
+  - HUD (I toggles): IAS, ALT/AGL, HDG, VSI, G (max/min), WIND, then engine/rotor/MAP/fuel/CHT/EGT/AOA/slip lines.
+    Warnings stay on screen with the HUD off.
+  - Gyro model: eye moved to the front of the helmet (was inside the torso box); control rods run along the keel and
+    up the mast instead of past the pilot's face.
+  - Browser: 75 fps (13.3 ms mean, p95 ≤ 15 ms) in every view and aircraft, display-capped; no console errors.
 - **Stage 6 Bensen B-8M gyroplane** (flyable; Tab cycles Air-Bike → Decathlon → gyro):
   - `PoweredAircraft` base (airframe, gear, powerplant and prop effects, fuel, pilot controls, G monitor, auto-rudder)
     with `FixedWingAircraft` (wing aero) and `Gyroplane` (rotor + tail surfaces) on top.
@@ -165,7 +190,7 @@
 - Measured in Chrome on the Mac mini M4 (2560x1440 display at 75 Hz): 75 fps, mean frame 13.34 ms,
   p95 13.6 ms, max 14.4 ms over 300 frames, so no dropped frames. The browser locks to the display's 75 Hz refresh.
   Physics holds 120 Hz. P pauses (physics 0 Hz, render continues) and resumes cleanly. No console errors.
-- Tests: 186 passing (Stage 6 added rotor, gyro performance and static-friction tests; Stage 5 added Decathlon performance, aerobatics, propeller-effects suites; engine response, pitch-attitude check, auto-rudder and the joystick profile added since; Stage 4 added aero, powerplant and Air-Bike performance/circuit suites; Stage 3 added rigid body, atmosphere, wind, gear and input suites). Highlights: free fall matches ½gt²;
+- Tests: 212 passing (Stage 7 added engine-temperature, instrument, HUD/gauge agreement, gauge geometry and view suites; Stage 6 added rotor, gyro performance and static-friction tests; Stage 5 added Decathlon performance, aerobatics, propeller-effects suites; engine response, pitch-attitude check, auto-rudder and the joystick profile added since; Stage 4 added aero, powerplant and Air-Bike performance/circuit suites; Stage 3 added rigid body, atmosphere, wind, gear and input suites). Highlights: free fall matches ½gt²;
   a torque-free tumble (with the intermediate-axis flip) conserves energy to 1e-6; an undamped strut bounce returns to its
   release height within 1%; all three aircraft settle at rest on their wheels (loads sum to weight, struts compress by load/k,
   taildraggers 8–13° nose-up); braking stops in v²/(2μg) on gravel and grass; rolling coast distance follows the rolling
@@ -207,6 +232,10 @@
   fuel 151 L is usable (163 L total); gyro empty 113.4 kg (250 lb), max 249.5 kg (550 lb).
 
 ## Known issues / open questions
+- Gauge markings for the Air-Bike and gyro (and the Hirth/McCulloch CHT/EGT limits) are assumed; no published panel
+  data. Engine temperature figures are estimates, not manufacturer data.
+- No magnetic variation: compass, DG and HUD all show true heading.
+- The Decathlon cabin interior is minimal (panel box only); on the ground the taildragger's nose hides the runway, as real.
 - Gyro hands-off: power changes still turn it gently (full power ~25°/min left, idle ~45°/min right) because prop
   torque changes with power; the bank stays under 4°.
 - Gyro rotor overspeeds (> 400 rpm) in a near-vertical slow descent; the warning shows it. Keep some airspeed.
@@ -236,7 +265,5 @@
 - Clouds are not fogged and stop at the layer edge (11 km out), so at high altitude the edge of the layer can be seen.
 
 ## Next step
-Confirm by hand in the gyro (Tab twice): hold B (brakes) and Q (or thumb button) with about 2,600 engine rpm to prerotate to ~330 rpm, then full power, back stick,
-lift off, climb, cruise, idle descent, and a gentle pushover to see the LOW G warning. Then Stage 7: cockpits and views
-(per-aircraft panels: ASI, altimeter, VSI, compass, tachos incl. rotor rpm, slip ball, EGT/CHT, fuel; MAP, G-meter;
-HUD option; chase, cockpit and tower views).
+Fly each aircraft in the cockpit view (key 1) and check the panel against the HUD (I toggles it); try the hat switch
+for looking around, and the tower (3) and fly-by (4) views. Then Stage 8 when the brief arrives.

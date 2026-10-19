@@ -49,6 +49,12 @@ export interface PowerplantOutput {
   propPower: number;
   /** Engine brake power, W. */
   enginePower: number;
+  /**
+   * Fuel-air charge flowing through the engine as a fraction of the flow at rated rpm, wide
+   * open, at sea level: manifold pressure x rpm (the cylinders fill to manifold pressure on
+   * every intake stroke). Heat into the cylinder heads follows it.
+   */
+  chargeFlow: number;
   engineRpm: number;
   propRpm: number;
   advanceRatio: number;
@@ -127,6 +133,7 @@ export class Powerplant {
     propTorque: 0,
     propPower: 0,
     enginePower: 0,
+    chargeFlow: 0,
     engineRpm: 0,
     propRpm: 0,
     advanceRatio: 0,
@@ -267,6 +274,7 @@ export class Powerplant {
     o.pitchScale = this.pitchScale;
     o.governorRpm = governorRpm;
     o.manifoldPressure = (inp.pressure ?? ISA_P0) * (firing ? MAP_CLOSED + (MAP_OPEN - MAP_CLOSED) * opening : 1);
+    o.chargeFlow = firing ? (o.manifoldPressure / (ISA_P0 * MAP_OPEN)) * (this.rpm / this.data.propulsion.ratedRpm) : 0;
     o.slipstreamPressure = Math.max(prop.thrust, 0) / this.discArea;
     o.fuelFlow = firing ? (e.bsfc_kgPerkWh * Math.max(enginePower, 0)) / 3.6e6 : 0;
     o.fuelStarved = this.running && this.starved;

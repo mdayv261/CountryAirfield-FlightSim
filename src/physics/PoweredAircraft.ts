@@ -4,6 +4,7 @@ import { GRAVITY } from '../core/constants';
 import { AutoRudder } from './autoRudder';
 import { Airframe, aircraftInertia } from './Airframe';
 import { ISA_P0, ISA_T0, R_AIR } from './atmosphere';
+import { EngineTemps } from './engineTemps';
 import { Powerplant } from './powerplant';
 import type { PhysicsEnvironment } from './PhysicsWorld';
 
@@ -55,6 +56,12 @@ export interface FlightState {
   beta: number;
   /** Load factor along the body's up axis (g); 1 in level flight. */
   loadFactor: number;
+  /**
+   * Sideways load factor along the body's right axis (g): what pushes a slip ball. Zero in
+   * balanced flight; positive when the seat pushes the pilot to the right (a skid to the left
+   * or a slip to the right), so the ball rolls left.
+   */
+  lateralG: number;
   /** Height of the CG above the ground below, m. */
   heightAgl: number;
   verticalSpeed: number;
@@ -95,8 +102,10 @@ const G_WARNING_FRACTION = 0.9;
  */
 export abstract class PoweredAircraft extends Airframe {
   readonly powerplant: Powerplant;
+  /** Cylinder-head and exhaust temperatures, if the data file models them. */
+  readonly temps: EngineTemps | null;
   readonly pilot: PilotControls = { elevator: 0, aileron: 0, rudder: 0, throttle: 0, brakeLeft: 0, brakeRight: 0, propLever: 1, prerotator: 0 };
-  readonly state: FlightState = { tas: 0, ias: 0, alpha: 0, beta: 0, loadFactor: 1, heightAgl: 0, verticalSpeed: 0 };
+  readonly state: FlightState = { tas: 0, ias: 0, alpha: 0, beta: 0, loadFactor: 1, lateralG: 0, heightAgl: 0, verticalSpeed: 0 };
   readonly gMonitor: GMonitor = { g: 1, max: 1, min: 1, warning: false, overstressed: false, overspeed: false, overspeedLatched: false };
   /** Fuel on board, litres. */
   fuelL: number;
@@ -119,6 +128,11 @@ export abstract class PoweredAircraft extends Airframe {
   private readonly propRadius: number;
   /** Angular momentum of the engine and propeller about the spin axis last step, kg m²/s. */
   private rotorMomentumPrev: number | null = null;
+  /**
+   * Set on a reset: the next step starts the engine warmed up (temperatures settled), on the
+   * ground as after a warm-up run, in the air for the current condition.
+   */
+  private warmStart: 'ground' | 'air' | null = 'air';
 
   constructor(data: AircraftData, fuelFraction = 1) {
     super(data, fuelFraction);
@@ -131,6 +145,7 @@ export abstract class PoweredAircraft extends Airframe {
     this.spinAxis = new THREE.Vector3(0, 0, -this.propSense);
     this.propRadius = data.propulsion.propDiameter_m! / 2;
     this.massAtLastUpdate = this.body.mass;
+    this.temps = data.engine.temps ? new EngineTemps(data.engine.temps) : null;
   }
 
   /**
@@ -183,6 +198,19 @@ export abstract class PoweredAircraft extends Airframe {
       accessoryPower: this.accessoryLoad(),
     });
     this.applyPropellerEffects(pp.thrust, pp.propTorque, pp.slipstreamPressure, dt);
+    if (this.temps) {
+      const t = {
+        running: this.powerplant.running,
+        powerFraction: pp.chargeFlow,
+        airspeed: -this.vAirBody.z,
+        slipstreamPressure: pp.slipstreamPressure,
+        density: air.density,
+        oat_C: air.temperature - 273.15,
+      };
+      if (this.warmStart) this.temps.settle(t, this.warmStart === 'ground');
+      else this.temps.step(dt, t);
+    }
+    this.warmStart = null;
 
     const heightAgl = b.position.y - env.ground.heightAt(b.position.x, b.position.z);
     const a = this.applyAirframeAero({
@@ -202,6 +230,7 @@ export abstract class PoweredAircraft extends Airframe {
     const up = b.toWorld(this.tmp2.set(0, 1, 0));
     const s = this.state;
     s.loadFactor = specific.dot(up) / (b.mass * GRAVITY);
+    s.lateralG = specific.dot(b.toWorld(this.tmp2.set(1, 0, 0))) / (b.mass * GRAVITY);
     s.tas = a.airspeed;
     s.ias = a.airspeed * Math.sqrt(air.density / RHO0);
     s.alpha = a.alpha;
@@ -291,6 +320,7 @@ export abstract class PoweredAircraft extends Airframe {
     this.powerplant.throttleOpening = 0;
     this.powerplant.start();
     this.rotorMomentumPrev = null;
+    this.warmStart = 'ground';
     this.resetGMonitor();
   }
 

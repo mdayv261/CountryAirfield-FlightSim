@@ -23,7 +23,9 @@ import { Gyroplane } from './physics/Gyroplane';
 import type { PoweredAircraft } from './physics/PoweredAircraft';
 import type { AircraftModel } from './aircraft/models/AircraftModel';
 import type { ControlState } from './input/controls';
-import { AircraftCamera, type AircraftView } from './ui/AircraftCamera';
+import { AircraftCamera, CAMERA, type AircraftView } from './ui/AircraftCamera';
+import { Instruments } from './cockpit/instruments';
+import { Panel } from './cockpit/Panel';
 import { Hud } from './ui/Hud';
 import { RUNWAYS } from './world/layout';
 import { WINDSOCK } from './world/layout';
@@ -91,7 +93,7 @@ const throwBlock = () => {
 };
 
 // The aircraft (Tab switches). Spawn points on both runways, both directions (keys 7, 8, 9, 0).
-const FLEET: Array<{ aircraft: PoweredAircraft; model: AircraftModel }> = [
+const FLEET: Array<{ aircraft: PoweredAircraft; model: AircraftModel; panel?: Panel }> = [
   (() => {
     const ac = new FixedWingAircraft(AIRCRAFT.airbike103);
     return { aircraft: ac, model: new AirBikeModel(ac) };
@@ -105,13 +107,21 @@ const FLEET: Array<{ aircraft: PoweredAircraft; model: AircraftModel }> = [
     return { aircraft: ac, model: new GyroModel(ac) };
   })(),
 ];
+// Each aircraft's instrument panel rides in its model, in body axes.
+for (const f of FLEET) {
+  if (!f.aircraft.data.panel) continue;
+  f.panel = new Panel(f.aircraft.data.panel);
+  f.model.object.add(f.panel.object);
+}
 let fleetIndex = 0;
 let aircraft = FLEET[0].aircraft;
 let aircraftModel = FLEET[0].model;
 scene.add(aircraftModel.object);
 physics.add(aircraft);
 const hud = new Hud(container, aircraft);
-const aircraftCam = new AircraftCamera(camera, renderer.domElement);
+const instruments = new Instruments();
+const windAtAircraft = new THREE.Vector3();
+const aircraftCam = new AircraftCamera(camera, renderer.domElement, groundAt);
 /** Lined up a few metres inside each threshold. */
 const SPAWN_INSET_M = 8;
 const half = RUNWAYS.length / 2 - SPAWN_INSET_M;
@@ -128,6 +138,7 @@ const spawn = (i: number) => {
   aircraft.resetOnGround(s.x, s.z, s.heading, groundAt(s.x, s.z));
   input.keyboardControls.state.throttle = 0;
   aircraftCam.reset();
+  instruments.reset();
 };
 spawn(0);
 /** Swap to another aircraft at the same spawn point. */
@@ -140,6 +151,7 @@ const selectAircraft = (i: number) => {
   scene.add(aircraftModel.object);
   hud.setAircraft(aircraft);
   spawn(spawnIndex);
+  if (view === 'flyby' || view === 'tower') aircraftCam.reset();
 };
 /**
  * Toe brakes. With separate left and right brake inputs (pedals), use them as they are.
@@ -153,11 +165,16 @@ function toeBrakes(c: ControlState): [number, number] {
   return [b * Math.min(1, 1 - c.yaw), b * Math.min(1, 1 + c.yaw)];
 }
 type View = AircraftView | 'free';
-const VIEWS: View[] = ['chase', 'cockpit', 'free'];
+/** View keys 1-5 (outside the free camera, whose own viewpoints use 1-6); V cycles. */
+const VIEWS: View[] = ['cockpit', 'chase', 'tower', 'flyby', 'free'];
 let view: View = 'chase';
 const setView = (v: View) => {
   view = v;
   if (v !== 'free') aircraftCam.view = v;
+  else {
+    camera.fov = CAMERA.fov.chase;
+    camera.updateProjectionMatrix();
+  }
   aircraftCam.reset();
 };
 // Keyboard flight keys on from the start; arrows fly rather than look.
@@ -199,10 +216,15 @@ const loop = new GameLoop({
     calibration.update();
     aircraftModel.update(alpha, loop.paused ? 0 : dt);
     if (view === 'free') freeCam.update(dt);
-    else aircraftCam.update(aircraftModel, dt);
+    else {
+      aircraftCam.hat = input.gamepads.hat();
+      aircraftCam.update(aircraftModel, dt);
+    }
+    // One set of instrument readings feeds both the panel gauges and the HUD.
+    const readings = instruments.update(aircraft, physics.windAt(aircraft.body.position, windAtAircraft), loop.paused ? 0 : dt);
+    FLEET[fleetIndex].panel?.update(readings, dt, view === 'cockpit');
     hud.visible = view !== 'free';
-    const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(aircraftModel.object.quaternion);
-    hud.update(((Math.atan2(fwd.x, -fwd.z) * 180) / Math.PI + 360) % 360);
+    hud.update(readings);
     // The windsock feels the same wind as everything else, at its mast-top height.
     windsock.update(physics.windAt(windsockTop, windsockAir), now / 1000);
     if (blockMesh.object.parent) blockMesh.update(alpha);
@@ -254,6 +276,14 @@ keyboard.onPress('KeyP', () => loop.togglePause());
 keyboard.onPress('Tab', () => selectAircraft((fleetIndex + 1) % FLEET.length));
 keyboard.onPress('KeyU', () => input.setAutoRudder(!input.aids.autoRudder));
 keyboard.onPress('KeyV', () => setView(VIEWS[(VIEWS.indexOf(view) + 1) % VIEWS.length]));
+keyboard.onPress('KeyI', () => (hud.enabled = !hud.enabled));
+// Digits pick the aircraft views, except in the free camera, where they keep its viewpoints.
+for (let k = 0; k < 6; k++) {
+  keyboard.onPress(`Digit${k + 1}`, () => {
+    if (view === 'free') freeCam.setView(k);
+    else if (k < VIEWS.length) setView(VIEWS[k]);
+  });
+}
 keyboard.onPress('KeyE', () => (aircraft.powerplant.running ? aircraft.powerplant.stop() : aircraft.powerplant.start()));
 keyboard.onPress('Backspace', () => spawn(spawnIndex));
 ['Digit7', 'Digit8', 'Digit9', 'Digit0'].forEach((code, i) => keyboard.onPress(code, () => spawn(i)));

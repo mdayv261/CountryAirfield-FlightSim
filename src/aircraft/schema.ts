@@ -243,6 +243,27 @@ export interface EngineData {
   bsfc_kgPerkWh: number;
   /** Belt or gearbox efficiency between crank and propeller. */
   driveEfficiency: number;
+  /** Cylinder-head and exhaust temperatures (gauges); see physics/engineTemps.ts. */
+  temps?: EngineTempsData;
+}
+
+/**
+ * Engine temperature model, °C on a standard (15 °C) day. CHT is set by the balance between
+ * heat from burning fuel (proportional to power) and the air blowing over the fins.
+ */
+export interface EngineTempsData {
+  /** Cylinder-head temperature at rated power with cooling air at refCoolingSpeed_mps, °C. */
+  chtClimb_C: number;
+  /** Speed of the cooling air over the fins in that full-power climb, m/s. */
+  refCoolingSpeed_mps: number;
+  /** How quickly the heads warm or cool (thermal mass over cooling), s. */
+  chtTimeConstant_s: number;
+  /** Share of the propeller slipstream's speed-up that reaches the cooling fins (0..1). */
+  slipstreamCooling: number;
+  /** Exhaust-gas temperature at idle and at full power, °C, and its response time, s. */
+  egtIdle_C: number;
+  egtFull_C: number;
+  egtTimeConstant_s: number;
 }
 
 /**
@@ -326,6 +347,50 @@ export interface AirframeAeroData {
   surfaces: SurfaceData[];
 }
 
+/** Gauges an instrument panel can carry (drawn in cockpit/gauges.ts). */
+export const GAUGE_KINDS = [
+  'asi', 'altimeter', 'vsi', 'tacho', 'rotorTacho', 'slip', 'compass', 'fuel', 'egt', 'cht',
+  'attitude', 'dg', 'map', 'gmeter',
+] as const;
+export type GaugeKind = (typeof GAUGE_KINDS)[number];
+
+/**
+ * One gauge on the panel. Scales are in display units: knots, feet, fpm, rpm, litres, °C,
+ * inHg, g, psi. Arcs are [from, to] on that scale.
+ */
+export interface GaugeData {
+  kind: GaugeKind;
+  /** Centre of the dial from the panel centre, m (x right, y up on the panel face). */
+  at_m: [number, number];
+  /** Dial diameter, m (a standard 3 1/8 in instrument is 0.08 m, 2 1/4 in is 0.057 m). */
+  diameter_m: number;
+  min?: number;
+  max?: number;
+  green?: [number, number];
+  yellow?: [number, number];
+  /** Red line on the scale. */
+  redline?: number;
+  /** For an airspeed indicator: the white (flap) arc, if any. */
+  white?: [number, number];
+}
+
+/** The instrument panel (or pod): a flat face in the cockpit with its gauges. */
+export interface PanelData {
+  /** Centre of the panel face, body axes, m. */
+  position_m: [number, number, number];
+  /** Width and height of the face, m. */
+  size_m: [number, number];
+  /** Face leaned back from vertical, degrees (towards the pilot's eye). */
+  tilt_deg: number;
+  /** Panel colour, as a CSS colour. */
+  colour: string;
+  /** Cockpit view: how far the pilot's head looks down from the fuselage line, degrees. */
+  lookDown_deg: number;
+  /** An open-cockpit pod stands on a post down to this airframe point (body axes, m). */
+  postTo_m?: [number, number, number];
+  gauges: GaugeData[];
+}
+
 export interface AircraftData {
   id: string;
   name: string;
@@ -340,6 +405,7 @@ export interface AircraftData {
   airframeAero?: AirframeAeroData;
   propeller?: PropellerData;
   engine?: EngineData;
+  panel?: PanelData;
   limits: Limits;
   targets: Targets;
   /** Free-text provenance and assumptions; not used by the physics. */
@@ -567,6 +633,43 @@ export function validateAircraftData(raw: unknown): AircraftData {
     num(e, 'engine.', 'stallRpm', 100, 3000);
     num(e, 'engine.', 'bsfc_kgPerkWh', 0.15, 1);
     num(e, 'engine.', 'driveEfficiency', 0.5, 1);
+    if (e.temps !== undefined) {
+      const t = isObj(e.temps) ? e.temps : {};
+      num(t, 'engine.temps.', 'chtClimb_C', 50, 350);
+      num(t, 'engine.temps.', 'refCoolingSpeed_mps', 5, 100);
+      num(t, 'engine.temps.', 'chtTimeConstant_s', 5, 1000);
+      num(t, 'engine.temps.', 'slipstreamCooling', 0, 1);
+      num(t, 'engine.temps.', 'egtIdle_C', 50, 1000);
+      num(t, 'engine.temps.', 'egtFull_C', 200, 1100);
+      num(t, 'engine.temps.', 'egtTimeConstant_s', 0.1, 60);
+    }
+  }
+
+  if (raw.panel !== undefined) {
+    const pn = section('panel');
+    const pair = (v: unknown, lim: number) => Array.isArray(v) && v.length === 2 && v.every((x) => typeof x === 'number' && Math.abs(x) <= lim);
+    const pos = pn.position_m;
+    if (!Array.isArray(pos) || pos.length !== 3 || !pos.every((v) => typeof v === 'number' && Math.abs(v) <= 10))
+      problems.push('panel.position_m must be three numbers within ±10 m');
+    if (!pair(pn.size_m, 3)) problems.push('panel.size_m must be [width, height] in metres');
+    num(pn, 'panel.', 'tilt_deg', -60, 80);
+    num(pn, 'panel.', 'lookDown_deg', 0, 45);
+    const post = pn.postTo_m;
+    if (post !== undefined && !(Array.isArray(post) && post.length === 3 && post.every((v) => typeof v === 'number' && Math.abs(v) <= 10)))
+      problems.push('panel.postTo_m must be three numbers within ±10 m');
+    str(pn, 'panel.', 'colour');
+    if (!Array.isArray(pn.gauges)) problems.push('panel.gauges must be a list');
+    else
+      pn.gauges.forEach((gg: unknown, i: number) => {
+        const path = `panel.gauges[${i}].`;
+        if (!isObj(gg)) return void problems.push(`${path} must be an object`);
+        oneOf(gg, path, 'kind', GAUGE_KINDS);
+        if (!pair(gg.at_m, 2)) problems.push(`${path}at_m must be [x, y] in metres`);
+        num(gg, path, 'diameter_m', 0.03, 0.15);
+        for (const k of ['min', 'max', 'redline']) num(gg, path, k, -10_000, 100_000, false);
+        for (const k of ['green', 'yellow', 'white'])
+          if (gg[k] !== undefined && !pair(gg[k], 100_000)) problems.push(`${path}${k} must be [from, to]`);
+      });
   }
 
   const inertia = section('inertia');

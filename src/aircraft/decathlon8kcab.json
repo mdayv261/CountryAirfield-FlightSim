@@ -154,7 +154,105 @@
     "frictionPerRpm_Nm": 0.004,
     "stallRpm": 350,
     "bsfc_kgPerkWh": 0.26,
-    "driveEfficiency": 1.0
+    "driveEfficiency": 1.0,
+    "temps": {
+      "chtClimb_C": 262,
+      "refCoolingSpeed_mps": 47,
+      "chtTimeConstant_s": 120,
+      "slipstreamCooling": 0.6,
+      "egtIdle_C": 420,
+      "egtFull_C": 680,
+      "egtTimeConstant_s": 4
+    }
+  },
+  "panel": {
+    "position_m": [0, 0.27, -1.08],
+    "size_m": [0.74, 0.26],
+    "tilt_deg": 10,
+    "colour": "#33363a",
+    "lookDown_deg": 12,
+    "gauges": [
+      {
+        "kind": "asi",
+        "at_m": [-0.3, 0.05],
+        "diameter_m": 0.08,
+        "max": 200,
+        "green": [49, 139],
+        "yellow": [139, 173],
+        "redline": 173
+      },
+      {
+        "kind": "attitude",
+        "at_m": [-0.215, 0.05],
+        "diameter_m": 0.08
+      },
+      {
+        "kind": "altimeter",
+        "at_m": [-0.13, 0.05],
+        "diameter_m": 0.08
+      },
+      {
+        "kind": "slip",
+        "at_m": [-0.3, -0.045],
+        "diameter_m": 0.07
+      },
+      {
+        "kind": "dg",
+        "at_m": [-0.215, -0.045],
+        "diameter_m": 0.08
+      },
+      {
+        "kind": "vsi",
+        "at_m": [-0.13, -0.045],
+        "diameter_m": 0.08,
+        "max": 2000
+      },
+      {
+        "kind": "gmeter",
+        "at_m": [-0.02, 0.05],
+        "diameter_m": 0.08,
+        "min": -5,
+        "max": 10,
+        "green": [-5, 6],
+        "redline": 6
+      },
+      {
+        "kind": "tacho",
+        "at_m": [0.065, 0.05],
+        "diameter_m": 0.08,
+        "max": 3500,
+        "green": [2000, 2700],
+        "redline": 2700
+      },
+      {
+        "kind": "map",
+        "at_m": [0.15, 0.05],
+        "diameter_m": 0.08,
+        "min": 10,
+        "max": 35,
+        "green": [15, 29]
+      },
+      {
+        "kind": "compass",
+        "at_m": [0.275, 0.055],
+        "diameter_m": 0.065
+      },
+      {
+        "kind": "fuel",
+        "at_m": [0.0, -0.05],
+        "diameter_m": 0.06,
+        "max": 151
+      },
+      {
+        "kind": "cht",
+        "at_m": [0.08, -0.05],
+        "diameter_m": 0.06,
+        "min": 50,
+        "max": 300,
+        "green": [150, 245],
+        "redline": 260
+      }
+    ]
   },
   "limits": {
     "vne_mps": 88.999,
@@ -189,6 +287,7 @@
     "Propeller: Hartzell 74 in two-blade constant-speed, governed 2000-2700 rpm; CT/CP at reference pitch, scaled with blade pitch.",
     "Engine: Lycoming AEIO-360-H1B, 180 hp at 2700 rpm, fuel injected with inverted fuel and oil (limits.invertedSystems).",
     "Rudder power falls to about 40% beyond 35 deg alpha (fin in the stalled wing's wake), which sets a realistic spin rate.",
-    "Pitch break past the stall (CmExtra) is sized so full aft stick without rotation settles just above the stall (about 26 deg alpha): no stable deep stall. In a spin the inertial pitch-up from roll and yaw rates holds a higher alpha."
+    "Pitch break past the stall (CmExtra) is sized so full aft stick without rotation settles just above the stall (about 26 deg alpha): no stable deep stall. In a spin the inertial pitch-up from roll and yaw rates holds a higher alpha.",
+    "Panel (Stage 7): six-pack plus engine gauges and G-meter. Markings from CLAUDE.md speeds (green 49-139 kt, yellow 139-173 kt, red line 173 kt), red line 2,700 rpm, +6/-5 g; Lycoming CHT limit 260 C (500 F)."
   ]
 }
