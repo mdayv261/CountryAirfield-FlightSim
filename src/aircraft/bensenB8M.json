@@ -1,0 +1,44 @@
+{
+  "id": "bensenB8M",
+  "name": "Bensen B-8M Gyrocopter",
+  "type": "gyroplane",
+  "propulsion": {
+    "layout": "pusher",
+    "engineName": "McCulloch 4318",
+    "ratedPowerW": 48470,
+    "ratedRpm": 4100,
+    "reductionRatio": 1
+  },
+  "mass": {
+    "emptyKg": 115,
+    "maxKg": 250,
+    "pilotKg": 90,
+    "fuelCapacityL": 20,
+    "fuelDensityKgPerL": 0.74
+  },
+  "geometry": {
+    "rotorDiameter_m": 6.15,
+    "rotorBlades": 2
+  },
+  "gear": {
+    "layout": "tricycle",
+    "brakes": false
+  },
+  "limits": {
+    "vne_mps": 48.872,
+    "rotorRpmMin": 200,
+    "rotorRpmMax": 400
+  },
+  "targets": {
+    "cruise_mps": 33.439,
+    "maxSpeed_mps": 48.872,
+    "climb_mps": 5.588,
+    "takeoffRoll_m": 30
+  },
+  "notes": [
+    "Source: CLAUDE.md. Speeds entered as knots, stored in m/s.",
+    "Rated rpm 4100 and direct drive are assumptions for the McCulloch 4318; confirm in Stage 6.",
+    "Rotor rpm: 200 minimum for take-off, 400 maximum (user supplied).",
+    "Take-off roll 30 m assumes prerotation. Brakes TBC in Stage 6."
+  ]
+}

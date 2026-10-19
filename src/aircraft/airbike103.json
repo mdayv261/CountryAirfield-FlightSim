@@ -1,0 +1,45 @@
+{
+  "id": "airbike103",
+  "name": "Air-Bike 103",
+  "type": "fixedWing",
+  "propulsion": {
+    "layout": "tractor",
+    "engineName": "Hirth F-33",
+    "ratedPowerW": 20880,
+    "ratedRpm": 6500,
+    "reductionRatio": 2.5,
+    "propDiameter_m": 1.524
+  },
+  "mass": {
+    "emptyKg": 112,
+    "maxKg": 227,
+    "pilotKg": 90,
+    "fuelCapacityL": 19,
+    "fuelDensityKgPerL": 0.74
+  },
+  "geometry": {
+    "span_m": 8.15,
+    "wingArea_m2": 11.1,
+    "chord_m": 1.3716
+  },
+  "gear": {
+    "layout": "taildragger",
+    "brakes": false
+  },
+  "limits": {
+    "vne_mps": 41.156
+  },
+  "targets": {
+    "stall_mps": 14.404,
+    "cruise_mps": 28.294,
+    "climb_mps": 2.413,
+    "takeoffRoll_m": 76,
+    "landingRoll_m": 61
+  },
+  "notes": [
+    "Source: CLAUDE.md. Speeds entered as knots, stored in m/s.",
+    "Max weight 227 kg is assumed (not published).",
+    "Belt reduction 2.5:1 with 60x28 in prop (user confirmed).",
+    "Fuel density 0.74 kg/L for 2-stroke petrol/oil mix."
+  ]
+}

@@ -1,0 +1,4 @@
+node_modules/
+dist/
+*.odt
+.DS_Store
