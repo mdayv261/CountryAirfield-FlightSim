@@ -35,4 +35,10 @@ export const GAMEPAD = {
   bindThreshold: 0.5,
   /** Analogue buttons (e.g. triggers) count as axes: 0 released .. 1 pressed. */
   storageKey: 'cfs.input.bindings.v1',
+  /**
+   * Version of the built-in default bindings. When it goes up, devices with a known profile
+   * get any newly defaulted channels added to existing saved bindings (never overwriting).
+   */
+  defaultsVersionKey: 'cfs.input.defaultsVersion',
+  defaultsVersion: 2,
 };

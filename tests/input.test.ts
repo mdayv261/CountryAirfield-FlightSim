@@ -137,6 +137,46 @@ describe('devices', () => {
     expect(g.read('roll')).toBeGreaterThan(0.6);
   });
 
+  describe('Logitech Extreme 3D Pro profile', () => {
+    const ID = 'Logitech Extreme 3D Pro (Vendor: 046d Product: c215)';
+    // 10 axes as Chrome reports them: X, Y, -, -, -, twist, slider, -, -, hat (1.286 = centred).
+    const pad = (twist: number, slider: number) => fakePad(ID, [0, 0, 0, 0, 0, twist, slider, 0, 0, 1.286]);
+
+    it('binds twist to the rudder and the slider to the throttle out of the box', () => {
+      let p = pad(0.6, -1); // twisted right, slider fully forward
+      const g = new GamepadInput(() => [p], memoryStorage());
+      g.poll();
+      expect(g.read('yaw')).toBeCloseTo((0.6 - 0.1) / 0.9, 9);
+      expect(g.read('throttle')).toBe(1);
+      p = pad(-0.05, 1); // twist resting just off centre, slider fully back
+      g.poll();
+      expect(g.read('yaw')).toBe(0); // inside the twist dead zone
+      expect(g.read('throttle')).toBe(0);
+    });
+
+    it('adds rudder and throttle to bindings saved before the profile existed, keeping user changes', () => {
+      const storage = memoryStorage();
+      const old = { deviceId: ID, kind: 'axis', cal: { min: -1, max: 1, centre: 0, deadzone: 0.05, invert: false } };
+      storage.setItem('cfs.input.bindings.v1', JSON.stringify({
+        roll: { ...old, index: 0 },
+        pitch: { ...old, index: 1, cal: { ...old.cal, invert: true } }, // the user had inverted pitch
+      }));
+      const g = new GamepadInput(() => [pad(0.5, -1)], storage);
+      g.poll();
+      expect(g.bindings.yaw?.index).toBe(5);
+      expect(g.bindings.throttle?.index).toBe(6);
+      expect(g.read('throttle')).toBe(1);
+      expect(g.bindings.pitch?.cal.invert).toBe(true); // untouched
+
+      // Once upgraded, a channel the user clears stays cleared.
+      g.clear('yaw');
+      const again = new GamepadInput(() => [pad(0.5, -1)], storage);
+      again.poll();
+      expect(again.bindings.yaw).toBeUndefined();
+      expect(again.bindings.throttle?.index).toBe(6);
+    });
+  });
+
   it('falls back to the keyboard when a bound device is unplugged', () => {
     const storage = memoryStorage();
     let pads: Gamepad[] = [fakePad('Stick', [0.9, 0])];

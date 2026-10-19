@@ -139,8 +139,10 @@
 - About 860k triangles a frame (terrain 160k, plus clouds and trees, plus the shadow pass). Fine on the M4; on a weaker laptop,
   the first things to cut are the terrain cell size (15 m → 20 m) and the cloud lobe count.
 - Gusts and turbulence are uniform across the field (functions of time only), which is fine for one aircraft.
-- Joystick defaults only cover roll and pitch for non-standard devices. The Extreme 3D Pro's twist (rudder) and throttle
-  slider need binding once on the calibration screen (O), and the slider probably needs "invert".
+- Joystick defaults: standard gamepads and the Logitech Extreme 3D Pro (built-in profile: X/Y stick, twist axis 5 =
+  rudder with a 0.1 dead zone, slider axis 6 = throttle, inverted so forward is full) work out of the box. Older saved
+  bindings are topped up once with the profile's missing channels, never overwriting user changes. Other
+  non-standard joysticks get roll and pitch only; bind the rest on the calibration screen (O).
 - The test block coasts a long way on gravel (rolling 0.04): about 80 m from 8 m/s. That is correct for free-rolling wheels.
 - Inertia and gear figures are estimates; Stages 4–6 should refine them against the targets.
 - Clouds are not fogged and stop at the layer edge (11 km out), so at high altitude the edge of the layer can be seen.

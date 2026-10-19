@@ -43,11 +43,15 @@ export class GamepadInput {
   devices: DeviceSnapshot[] = [];
   bindings: Bindings;
 
+  /** Version of the defaults the saved bindings were made with (1 = before profiles existed). */
+  private defaultsVersion: number;
+
   constructor(
     private readonly source: PadSource = browserPads,
     private readonly storage: Pick<Storage, 'getItem' | 'setItem'> | null = safeStorage(),
   ) {
     this.bindings = this.load();
+    this.defaultsVersion = this.loadDefaultsVersion();
   }
 
   /** Read every connected device (call once per frame). */
@@ -66,6 +70,29 @@ export class GamepadInput {
     if (Object.keys(this.bindings).length === 0) {
       const d = pickDefaultDevice(this.devices);
       if (d) this.applyDefaults(d);
+    } else if (this.defaultsVersion < GAMEPAD.defaultsVersion) {
+      this.topUpFromProfiles();
+    }
+  }
+
+  /**
+   * Saved bindings made before a device had a profile: add the profile's channels that are
+   * still unbound (e.g. rudder and throttle), leaving everything the user set alone. Runs once,
+   * as soon as a profiled device is connected.
+   */
+  private topUpFromProfiles(): void {
+    let found = false;
+    for (const d of this.devices) {
+      const profile = profileFor(d);
+      if (!profile) continue;
+      found = true;
+      for (const [ch, b] of Object.entries(profile.bindings(d)) as [Channel, Binding][]) {
+        if (!this.bindings[ch]) this.bindings[ch] = b;
+      }
+    }
+    if (found) {
+      this.defaultsVersion = GAMEPAD.defaultsVersion;
+      this.save();
     }
   }
 
@@ -122,6 +149,13 @@ export class GamepadInput {
    * Any other device (flight sticks): X = ailerons, Y = elevator; bind the rest by hand.
    */
   applyDefaults(d: DeviceSnapshot): void {
+    this.defaultsVersion = GAMEPAD.defaultsVersion;
+    const profile = profileFor(d);
+    if (profile) {
+      Object.assign(this.bindings, profile.bindings(d));
+      this.save();
+      return;
+    }
     const axis = (index: number): Binding => ({ deviceId: d.id, kind: 'axis', index, cal: defaultCalibration(GAMEPAD.deadzone) });
     const trigger = (index: number): Binding => ({
       deviceId: d.id,
@@ -146,9 +180,19 @@ export class GamepadInput {
 
   save(): void {
     try {
+      this.storage?.setItem(GAMEPAD.defaultsVersionKey, String(this.defaultsVersion));
       this.storage?.setItem(GAMEPAD.storageKey, JSON.stringify(this.bindings));
     } catch {
       // Storage may be blocked (private window); bindings then last for this session only.
+    }
+  }
+
+  private loadDefaultsVersion(): number {
+    try {
+      const v = Number(this.storage?.getItem(GAMEPAD.defaultsVersionKey));
+      return Number.isFinite(v) && v > 0 ? v : 1;
+    } catch {
+      return 1;
     }
   }
 
@@ -160,6 +204,41 @@ export class GamepadInput {
       return {};
     }
   }
+}
+
+/**
+ * Built-in profiles for joysticks whose axis layout we know, so they work without binding
+ * by hand. Axis numbers are as the browser reports them (Gamepad API, non-standard mapping).
+ */
+interface DeviceProfile {
+  match: RegExp;
+  bindings(d: DeviceSnapshot): Bindings;
+}
+
+const axisBinding = (d: DeviceSnapshot, index: number, deadzone: number, invert = false): Binding => ({
+  deviceId: d.id,
+  kind: 'axis',
+  index,
+  cal: { min: -1, max: 1, centre: 0, deadzone, invert },
+});
+
+export const DEVICE_PROFILES: DeviceProfile[] = [
+  {
+    // Logitech Extreme 3D Pro: X, Y, then axis 5 = twist (rudder), axis 6 = throttle slider
+    // (reads −1 pushed fully forward, so inverted), axis 9 = hat switch.
+    match: /extreme 3d/i,
+    bindings: (d) => ({
+      roll: axisBinding(d, 0, GAMEPAD.deadzone),
+      pitch: axisBinding(d, 1, GAMEPAD.deadzone),
+      // A twist grip has more slop around centre than the stick, so a wider dead zone.
+      yaw: axisBinding(d, 5, 0.1),
+      throttle: axisBinding(d, 6, 0.02, true),
+    }),
+  },
+];
+
+function profileFor(d: DeviceSnapshot): DeviceProfile | undefined {
+  return DEVICE_PROFILES.find((p) => p.match.test(d.id) && d.axes.length >= 7);
 }
 
 /** Names that suggest a flight controller rather than, say, a keyboard receiver. */
