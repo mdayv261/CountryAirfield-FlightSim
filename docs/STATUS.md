@@ -123,13 +123,13 @@
     E starts and stops it. Propeller thrust and torque from CT/CP vs advance ratio; windmills in a fast glide.
     Torque reaction rolls left (clockwise prop). Fuel burn (BSFC 0.45 kg/kWh) updates mass and inertia.
     Single-cylinder vibration (firing at rpm/60, about 100 Hz) is exposed as a level and frequency for cockpit
-    camera shake (and later sound), not as a force: it is above the 60 Hz a 120 Hz step can represent.
+    sound (Stage 9), not as a force: it is above the 60 Hz a 120 Hz step can represent.
   - `FixedWingAircraft`: airframe + gear + aero + powerplant + fuel; flight state (IAS, alpha, beta, G, AGL, VS).
   - Data in `airbike103.json` (tables, derivatives, prop, engine); notes record each estimate and the tuning.
   - Procedural model (`src/aircraft/models/airbike103Model.ts`): strut-braced high wing, steel-tube keel and booms,
     open seat with pilot, Hirth with belt drive, wooden prop (blurs to a disc), tail feathers. Elevator, ailerons
     and rudder move with the controls.
-  - Views (V cycles them): chase (follows heading, not bank), cockpit (pilot's eye, engine shake, drag to look),
+  - Views (V cycles them): chase (follows heading, not bank), cockpit (pilot's eye, drag to look; engine shake removed 2026-10-20 so the panel stays steady),
     free camera. HUD on the left: IAS kt, ALT and AGL ft, VSI fpm, heading, rpm, throttle, fuel, G, AoA, slip ball,
     and a STALL warning 3° before the stalling angle.
   - Pitch attitudes (user check, flown as a pilot would; test within ±2°): 0.1° level at 75% throttle (47 kt),

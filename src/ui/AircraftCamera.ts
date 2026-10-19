@@ -26,8 +26,6 @@ export const CAMERA = {
     hatSide_deg: 90,
     hatUp_deg: 25,
     hatBack_deg: 160,
-    /** Maximum head shake from engine vibration, m. */
-    shake_m: 0.004,
   },
   tower: {
     /** Standing eye height above the top storey's floor, m. */
@@ -91,7 +89,7 @@ export function flyByPassed(camera: THREE.Vector3, position: THREE.Vector3, velo
 /**
  * Views that follow the aircraft.
  *  - cockpit: the pilot's eye, fixed to the airframe and looking down a little so the panel
- *    shows, with engine vibration shaking it slightly. Drag the mouse or use the joystick
+ *    shows (held steady: no engine shake, so the gauges stay readable). Drag the mouse or use the joystick
  *    hat to look around; released, the head turns back to straight ahead.
  *  - chase: behind and above, following the heading smoothly but not the bank, so the
  *    horizon stays level and you can judge the aircraft's attitude from outside.
@@ -115,7 +113,6 @@ export class AircraftCamera {
   private dragging = false;
   private lastX = 0;
   private lastY = 0;
-  private shakePhase = 0;
   private flyBySide = 1;
   private flyByDistance = 0;
 
@@ -208,14 +205,8 @@ export class AircraftCamera {
       this.lookYaw -= this.lookYaw * k;
       this.lookPitch -= this.lookPitch * k;
     }
-    // Engine shake. The real firing frequency (~100 Hz) is far above the display rate, so we
-    // show its effect as a small jitter whose size follows the vibration level.
-    const pp = aircraft.powerplant.out;
-    this.shakePhase += dt * 37;
-    const s = c.shake_m * pp.vibration;
-    const shake = new THREE.Vector3(Math.sin(this.shakePhase * 1.7) * s, Math.sin(this.shakePhase * 2.3) * s, 0);
 
-    this.camera.position.copy(model.eye).add(shake).applyQuaternion(pose.quaternion).add(pose.position);
+    this.camera.position.copy(model.eye).applyQuaternion(pose.quaternion).add(pose.position);
     const lookDown = ((aircraft.data.panel?.lookDown_deg ?? c.lookDown_deg) * Math.PI) / 180;
     const look = new THREE.Quaternion().setFromEuler(new THREE.Euler(this.lookPitch - lookDown, this.lookYaw, 0, 'YXZ'));
     this.camera.quaternion.copy(pose.quaternion).multiply(look);
