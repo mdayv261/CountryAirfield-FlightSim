@@ -10,8 +10,8 @@
     "reductionRatio": 1
   },
   "mass": {
-    "emptyKg": 115,
-    "maxKg": 250,
+    "emptyKg": 113.4,
+    "maxKg": 249.5,
     "pilotKg": 90,
     "fuelCapacityL": 20,
     "fuelDensityKgPerL": 0.74
@@ -39,6 +39,7 @@
     "Source: CLAUDE.md. Speeds entered as knots, stored in m/s.",
     "Speeds from vortechonline.com Bensen B-8M page (cruise 65 mph, max 95 mph), converted to knots (x 0.869), rounded down.",
     "Rated rpm 4100 and direct drive are assumptions for the McCulloch 4318; confirm in Stage 6.",
+    "Empty 250 lb, gross 550 lb (vortechonline.com).",
     "Rotor rpm: 200 minimum for take-off, 400 maximum (user supplied).",
     "Take-off roll 30 m assumes prerotation. Brakes TBC in Stage 6."
   ]

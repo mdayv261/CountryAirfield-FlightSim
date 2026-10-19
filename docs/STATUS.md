@@ -21,10 +21,15 @@
 - Speeds are knots everywhere; mph is never used. Manufacturer mph figures are converted (x 0.869) and rounded down to a whole knot:
   Air-Bike stall 24, cruise 47, Vne 69 kt; Decathlon stall 49, Vx 50, Vy 71, Va 93, Vno 139, Vne 173 kt;
   Gyro (Bensen B-8M per vortechonline.com: cruise 65 mph, max 95 mph) cruise 56, max 82 kt.
+- Where sources disagree, the manufacturer's official figures win (rule in CLAUDE.md). Audit on 2026-10-19 changed:
+  Air-Bike wing area 11.15 m2 (120 sq ft); Hirth power 20.6 kW (28 HP DIN); Decathlon cruise 122 kt at 75% power added,
+  fuel 151 L is usable (163 L total); gyro empty 113.4 kg (250 lb), max 249.5 kg (550 lb).
 
 ## Known issues / open questions
 - Frame rate not yet confirmed in a browser (the Chrome extension was not connected during the build).
 - McCulloch 4318 rated rpm (4100) and direct drive are assumptions; confirm in Stage 6.
+- Gyro figures with no Bensen/Vortech source: rotor 6.15 m (user-supplied; Wikipedia says 20 ft / 6.10 m), fuel 20 L,
+  take-off roll 30 m (Amax Eagle figure; Wikipedia/Jane's gives 300 ft / 91 m for the B-8M). Kept as in CLAUDE.md.
 - The Stage 6 prompt's exit check says "cruise 70 mph" (Amax Eagle figure). Use CLAUDE.md's 56 kt (Bensen 65 mph) instead.
 
 ## Next step

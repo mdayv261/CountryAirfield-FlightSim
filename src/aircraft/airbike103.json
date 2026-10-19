@@ -5,7 +5,7 @@
   "propulsion": {
     "layout": "tractor",
     "engineName": "Hirth F-33",
-    "ratedPowerW": 20880,
+    "ratedPowerW": 20600,
     "ratedRpm": 6500,
     "reductionRatio": 2.5,
     "propDiameter_m": 1.524
@@ -19,7 +19,7 @@
   },
   "geometry": {
     "span_m": 8.15,
-    "wingArea_m2": 11.1,
+    "wingArea_m2": 11.15,
     "chord_m": 1.3716
   },
   "gear": {
@@ -39,6 +39,7 @@
   "notes": [
     "Source: CLAUDE.md. Speeds entered as knots, stored in m/s.",
     "Manufacturer speeds published in mph, converted to knots (x 0.869), rounded down to whole knots.",
+    "Official figures (jordanlakeaero.com, hirthengines.com): 120 sq ft wing, 20.6 kW (28 HP DIN) at 6500 rpm, empty 242-248 lb.",
     "Max weight 227 kg is assumed (not published).",
     "Belt reduction 2.5:1 with 60x28 in prop (user confirmed).",
     "Fuel density 0.74 kg/L for 2-stroke petrol/oil mix."

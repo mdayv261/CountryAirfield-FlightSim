@@ -18,15 +18,15 @@ Daylight only, blue sky, altocumulus clouds. Moderate-realism 6-DOF physics.
 
 \#\# Aircraft targets (tune to within \+/-10%)  
 Gyrocopter (Bensen B8M, McCulloch 4318 engine 65 hp, pusher):  
-  rotor 6.15 m 2-blade, empty 115 kg, max 250 kg, fuel 20 L, cruise 56 kts,  
+  rotor 6.15 m 2-blade, empty 113.4 kg, max 249.5 kg, fuel 20 L, cruise 56 kts,  
   max 82 kts, climb 1100 fpm, take-off roll 30 m with prerotation, tricycle gear.  
-Air-Bike 103 (Hirth F-33 28 hp at 6500 rpm, belt reduction, tractor):  
-  span 8.15 m, area 11.1 m2, chord 54 in, empty 112 kg, max 227 kg (assumed),  
+Air-Bike 103 (Hirth F-33 20.6 kW (28 hp) at 6500 rpm, belt reduction, tractor):  
+  span 8.15 m, area 11.15 m2, chord 54 in, empty 112 kg, max 227 kg (assumed),  
   fuel 19 L, stall 24 kts, cruise 47 kts, Vne 69 kts, climb 475 fpm,  
   take-off roll 76 m, landing roll 61 m, taildragger, no brakes.  
 Super Decathlon 8KCAB (Lycoming AEIO-360 180 hp at 2700 rpm, 74 in constant-speed prop):  
-  span 9.75 m, area 15.7 m2, empty 592 kg, max 816 kg aerobatic, fuel 151 L,  
-  stall 49 kts, Vx 50, Vy 71, Va 93, Vno 139, Vne 173 kts, climb 1130 fpm,  
+  span 9.75 m, area 15.7 m2, empty 592 kg, max 816 kg aerobatic, fuel 151 L usable (163 L total),  
+  stall 49 kts, Vx 50, Vy 71, Va 93, Vno 139, Vne 173 kts, cruise 122 kts at 75% power, climb 1130 fpm,  
   take-off roll 177 m, landing roll 152 m, \+6/-5 g, inverted fuel and oil, taildragger.
 
 \#\# Airfield  
@@ -42,4 +42,5 @@ Gentle hills to 60 m above field, tree lines, gum clusters, farm dam to the nort
 \- Explain physics choices in plain English comments for a mechanical engineer.  
 \- Never delete working features without asking. Commit at the end of each stage.  
 \- Keep docs/STATUS.md updated: stage, what works, known issues, next step.  
-\- Speeds in knots everywhere (data, code, gauges, HUD, docs). Convert manufacturer mph figures to knots (x 0.869), rounded down to a whole knot; never display or store mph.
+\- Speeds in knots everywhere (data, code, gauges, HUD, docs). Convert manufacturer mph figures to knots (x 0.869), rounded down to a whole knot; never display or store mph.  
+\- Where sources disagree, always use the manufacturer's official figures. Sources: americanchampionaircraft.com (Decathlon), jordanlakeaero.com (Air-Bike), hirthengines.com (Hirth), vortechonline.com/bensen (Bensen B-8M).

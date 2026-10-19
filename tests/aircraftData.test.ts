@@ -18,10 +18,10 @@ describe('aircraft data files', () => {
     const a = AIRCRAFT.airbike103;
     expect(a.type).toBe('fixedWing');
     expect(a.propulsion.layout).toBe('tractor');
-    close(a.propulsion.ratedPowerW, hpToW(28));
+    expect(a.propulsion.ratedPowerW).toBe(20600); // Hirth official 20.6 kW (28 HP DIN)
     expect(a.propulsion.ratedRpm).toBe(6500);
     expect(a.geometry.span_m).toBe(8.15);
-    expect(a.geometry.wingArea_m2).toBe(11.1);
+    expect(a.geometry.wingArea_m2).toBe(11.15);
     close(a.geometry.chord_m, 54 * 0.0254);
     expect(a.mass).toMatchObject({ emptyKg: 112, maxKg: 227, fuelCapacityL: 19 });
     close(a.targets.stall_mps, ktToMps(24));
@@ -41,6 +41,7 @@ describe('aircraft data files', () => {
     expect(a.geometry).toMatchObject({ span_m: 9.75, wingArea_m2: 15.7 });
     expect(a.mass).toMatchObject({ emptyKg: 592, maxKg: 816, fuelCapacityL: 151 });
     close(a.targets.stall_mps, ktToMps(49));
+    close(a.targets.cruise_mps, ktToMps(122));
     close(a.targets.vx_mps, ktToMps(50));
     close(a.targets.vy_mps, ktToMps(71));
     close(a.limits.va_mps, ktToMps(93));
@@ -59,7 +60,7 @@ describe('aircraft data files', () => {
     expect(a.propulsion.engineName).toBe('McCulloch 4318');
     close(a.propulsion.ratedPowerW, hpToW(65));
     expect(a.geometry).toMatchObject({ rotorDiameter_m: 6.15, rotorBlades: 2 });
-    expect(a.mass).toMatchObject({ emptyKg: 115, maxKg: 250, fuelCapacityL: 20 });
+    expect(a.mass).toMatchObject({ emptyKg: 113.4, maxKg: 249.5, fuelCapacityL: 20 });
     close(a.targets.cruise_mps, ktToMps(56));
     close(a.targets.maxSpeed_mps, ktToMps(82));
     close(a.targets.climb_mps, fpmToMps(1100));

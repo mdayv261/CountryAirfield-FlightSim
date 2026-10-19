@@ -36,6 +36,7 @@
   },
   "targets": {
     "stall_mps": 25.208,
+    "cruise_mps": 62.762,
     "vx_mps": 25.722,
     "vy_mps": 36.526,
     "climb_mps": 5.74,
@@ -46,6 +47,7 @@
     "Source: CLAUDE.md. Speeds entered as knots, stored in m/s.",
     "Manufacturer speeds published in mph, converted to knots (x 0.869), rounded down to whole knots.",
     "Max weight 816 kg is the aerobatic category limit.",
+    "Official figures (americanchampionaircraft.com). Fuel 151 L is usable (40 US gal); total 43 gal / 163 L. Cruise 141 mph at 75% power.",
     "Fuel density 0.72 kg/L (avgas 100LL)."
   ]
 }
