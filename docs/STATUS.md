@@ -1,6 +1,6 @@
 # Project Status
 
-**Current stage:** 1 – Foundation (complete, awaiting browser check by the user)
+**Current stage:** 1 – Foundation (complete; exit check passed 2026-10-19)
 **Next stage:** 2 – Airfield and world
 
 ## What works
@@ -12,6 +12,9 @@
 - Starter JSON files: `airbike103.json`, `decathlon8kcab.json`, `bensenB8M.json`. They hold the CLAUDE.md figures converted to SI units. Aerodynamic, propeller, gear and rotor data come in Stages 4–6.
 - Scene: sky-blue background with horizon fog, 6 km flat ground plane, sun and sky lighting, and an axis marker at the origin (red = east, green = up, blue = south).
 - FPS overlay: fps, frame time (ms), physics rate (Hz) and a PAUSED flag.
+- Measured in Chrome on the Mac mini M4 (2560x1440 display at 75 Hz): 75 fps, mean frame 13.34 ms,
+  p95 13.6 ms, max 14.4 ms over 300 frames, so no dropped frames. The browser locks to the display's 75 Hz refresh.
+  Physics holds 120 Hz. P pauses (physics 0 Hz, render continues) and resumes cleanly. No console errors.
 - Tests: 28 passing (game loop timing and pause, unit conversions, aircraft data against CLAUDE.md, validator rejections).
 
 ## Decisions recorded
@@ -26,7 +29,6 @@
   fuel 151 L is usable (163 L total); gyro empty 113.4 kg (250 lb), max 249.5 kg (550 lb).
 
 ## Known issues / open questions
-- Frame rate not yet confirmed in a browser (the Chrome extension was not connected during the build).
 - McCulloch 4318 rated rpm (4100) and direct drive are assumptions; confirm in Stage 6.
 - Gyro figures with no Bensen/Vortech source: rotor 6.15 m (user-supplied; Wikipedia says 20 ft / 6.10 m), fuel 20 L,
   take-off roll 30 m (Amax Eagle figure; Wikipedia/Jane's gives 300 ft / 91 m for the B-8M). Kept as in CLAUDE.md.
