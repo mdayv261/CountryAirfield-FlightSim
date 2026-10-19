@@ -149,7 +149,9 @@ describe('gauges agree with the HUD', () => {
       expect(at(centre)[0], ac.id).toBe(0);
       expect(at('altimeter')[0]).toBeLessThan(0);
       expect(at('asi')[0]).toBeGreaterThanOrEqual(0);
-      expect(at('vsi')[0]).toBeGreaterThan(at('asi')[0]);
+      // Gyro (user, 2026-10-20): VSI to the left of the ALT instead.
+      if (ac.id === 'bensenB8M') expect(at('vsi')[0]).toBeLessThan(at('altimeter')[0]);
+      else expect(at('vsi')[0]).toBeGreaterThan(at('asi')[0]);
       const slip = at('slip');
       expect(slip[0]).toBe(at('asi')[0]);
       expect(slip[1]).toBeLessThan(top);
@@ -158,11 +160,11 @@ describe('gauges agree with the HUD', () => {
       expect(at(heading)[1]).toBeLessThan(top);
       // Air-Bike (user, 2026-10-20): EGT left of the compass with CHT above it, top row.
       const leftColumn = ac.id === 'airbike103' ? ['egt', 'cht'] : [];
-      // Gyro (user, 2026-10-20): engine tacho then rotor LCD on the top row, right of the VSI.
+      // Gyro (user, 2026-10-20): engine tacho then rotor LCD on the top row, right of the ASI.
       const topRight = ac.id === 'bensenB8M' ? ['tacho', 'rotorTacho'] : [];
       for (const k of topRight) {
         expect(at(k)[1], `${ac.id} ${k}`).toBe(top);
-        expect(at(k)[0], `${ac.id} ${k}`).toBeGreaterThan(at('vsi')[0]);
+        expect(at(k)[0], `${ac.id} ${k}`).toBeGreaterThan(at('asi')[0]);
       }
       for (const g of gs)
         if (![...flight, ...leftColumn, ...topRight, 'slip', heading].includes(g.kind)) {
@@ -184,7 +186,7 @@ describe('gauges agree with the HUD', () => {
     expect(gyro('fuel').at_m[0]).toBeGreaterThan(gyro('slip').at_m[0]);
     expect(gyro('egt').at_m[0]).toBeGreaterThan(gyro('fuel').at_m[0]);
     expect(gyro('cht').at_m[0]).toBeGreaterThan(gyro('egt').at_m[0]);
-    expect(AIRCRAFT.bensenB8M.panel!.size_m[0]).toBeLessThan(0.6);
+    expect(AIRCRAFT.bensenB8M.panel!.size_m[0]).toBeLessThan(0.48);
     expect(gyro('rotorTacho').style).toBe('lcd');
     expect(lcdText(362.6)).toBe('363');
   });

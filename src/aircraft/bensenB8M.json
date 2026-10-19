@@ -164,12 +164,18 @@
   },
   "panel": {
     "position_m": [0, 0.05, -0.85],
-    "size_m": [0.48, 0.15],
+    "size_m": [0.38, 0.15],
     "tilt_deg": 20,
     "colour": "#2b2b2b",
     "lookDown_deg": 12,
     "postTo_m": [0, -0.55, -0.9],
     "gauges": [
+      {
+        "kind": "vsi",
+        "at_m": [-0.14, 0.035],
+        "diameter_m": 0.064,
+        "max": 1500
+      },
       {
         "kind": "altimeter",
         "at_m": [-0.07, 0.035],
@@ -185,14 +191,8 @@
         "redline": 82
       },
       {
-        "kind": "vsi",
-        "at_m": [0.07, 0.035],
-        "diameter_m": 0.064,
-        "max": 1500
-      },
-      {
         "kind": "tacho",
-        "at_m": [0.14, 0.035],
+        "at_m": [0.07, 0.035],
         "diameter_m": 0.064,
         "max": 5000,
         "green": [2000, 4100],
@@ -200,7 +200,7 @@
       },
       {
         "kind": "rotorTacho",
-        "at_m": [0.207, 0.035],
+        "at_m": [0.137, 0.035],
         "diameter_m": 0.06,
         "style": "lcd",
         "green": [200, 400],
