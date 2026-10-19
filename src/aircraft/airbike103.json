@@ -27,18 +27,18 @@
     "brakes": false
   },
   "limits": {
-    "vne_mps": 35.754
+    "vne_mps": 35.497
   },
   "targets": {
-    "stall_mps": 12.501,
-    "cruise_mps": 24.59,
+    "stall_mps": 12.347,
+    "cruise_mps": 24.179,
     "climb_mps": 2.413,
     "takeoffRoll_m": 76,
     "landingRoll_m": 61
   },
   "notes": [
     "Source: CLAUDE.md. Speeds entered as knots, stored in m/s.",
-    "Manufacturer speeds published in mph, converted to knots (x 0.869) in CLAUDE.md.",
+    "Manufacturer speeds published in mph, converted to knots (x 0.869), rounded down to whole knots.",
     "Max weight 227 kg is assumed (not published).",
     "Belt reduction 2.5:1 with 60x28 in prop (user confirmed).",
     "Fuel density 0.74 kg/L for 2-stroke petrol/oil mix."
