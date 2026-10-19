@@ -27,23 +27,24 @@
     "brakes": true
   },
   "limits": {
-    "vne_mps": 102.889,
-    "vno_mps": 82.311,
-    "va_mps": 55.046,
+    "vne_mps": 89.41,
+    "vno_mps": 71.508,
+    "va_mps": 47.843,
     "gMax": 6,
     "gMin": -5,
     "invertedSystems": true
   },
   "targets": {
-    "stall_mps": 29.323,
-    "vx_mps": 29.838,
-    "vy_mps": 42.184,
+    "stall_mps": 25.465,
+    "vx_mps": 25.928,
+    "vy_mps": 36.68,
     "climb_mps": 5.74,
     "takeoffRoll_m": 177,
     "landingRoll_m": 152
   },
   "notes": [
     "Source: CLAUDE.md. Speeds entered as knots, stored in m/s.",
+    "Manufacturer speeds published in mph, converted to knots (x 0.869) in CLAUDE.md.",
     "Max weight 816 kg is the aerobatic category limit.",
     "Fuel density 0.72 kg/L (avgas 100LL)."
   ]

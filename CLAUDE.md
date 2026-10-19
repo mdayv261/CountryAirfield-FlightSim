@@ -22,11 +22,11 @@ Gyrocopter (Bensen B8M, McCulloch 4318 engine 65 hp, pusher):
   max 95 kts, climb 1100 fpm, take-off roll 30 m with prerotation, tricycle gear.  
 Air-Bike 103 (Hirth F-33 28 hp at 6500 rpm, belt reduction, tractor):  
   span 8.15 m, area 11.1 m2, chord 54 in, empty 112 kg, max 227 kg (assumed),  
-  fuel 19 L, stall 28 kts, cruise 55 kts, Vne 80 kts, climb 475 fpm,  
+  fuel 19 L, stall 24.3 kts, cruise 47.8 kts, Vne 69.5 kts, climb 475 fpm,  
   take-off roll 76 m, landing roll 61 m, taildragger, no brakes.  
 Super Decathlon 8KCAB (Lycoming AEIO-360 180 hp at 2700 rpm, 74 in constant-speed prop):  
   span 9.75 m, area 15.7 m2, empty 592 kg, max 816 kg aerobatic, fuel 151 L,  
-  stall 57 kts, Vx 58, Vy 82, Va 107, Vno 160, Vne 200 kts, climb 1130 fpm,  
+  stall 49.5 kts, Vx 50.4, Vy 71.3, Va 93.0, Vno 139.0, Vne 173.8 kts, climb 1130 fpm,  
   take-off roll 177 m, landing roll 152 m, \+6/-5 g, inverted fuel and oil, taildragger.
 
 \#\# Airfield  
@@ -41,4 +41,5 @@ Gentle hills to 60 m above field, tree lines, gum clusters, farm dam to the nort
 \- Keep 60 fps on a mid-range laptop. Report frame time after visual changes.  
 \- Explain physics choices in plain English comments for a mechanical engineer.  
 \- Never delete working features without asking. Commit at the end of each stage.  
-\- Keep docs/STATUS.md updated: stage, what works, known issues, next step.
+\- Keep docs/STATUS.md updated: stage, what works, known issues, next step.  
+\- Speeds in knots everywhere (data, code, gauges, HUD, docs). Convert manufacturer mph figures to knots (x 0.869); never display or store mph.

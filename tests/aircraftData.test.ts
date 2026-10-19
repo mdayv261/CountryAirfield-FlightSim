@@ -24,9 +24,9 @@ describe('aircraft data files', () => {
     expect(a.geometry.wingArea_m2).toBe(11.1);
     close(a.geometry.chord_m, 54 * 0.0254);
     expect(a.mass).toMatchObject({ emptyKg: 112, maxKg: 227, fuelCapacityL: 19 });
-    close(a.targets.stall_mps, ktToMps(28));
-    close(a.targets.cruise_mps, ktToMps(55));
-    close(a.limits.vne_mps, ktToMps(80));
+    close(a.targets.stall_mps, ktToMps(24.3));
+    close(a.targets.cruise_mps, ktToMps(47.8));
+    close(a.limits.vne_mps, ktToMps(69.5));
     close(a.targets.climb_mps, fpmToMps(475));
     expect(a.targets).toMatchObject({ takeoffRoll_m: 76, landingRoll_m: 61 });
     expect(a.gear).toEqual({ layout: 'taildragger', brakes: false });
@@ -40,12 +40,12 @@ describe('aircraft data files', () => {
     expect(a.propulsion.constantSpeedProp).toBe(true);
     expect(a.geometry).toMatchObject({ span_m: 9.75, wingArea_m2: 15.7 });
     expect(a.mass).toMatchObject({ emptyKg: 592, maxKg: 816, fuelCapacityL: 151 });
-    close(a.targets.stall_mps, ktToMps(57));
-    close(a.targets.vx_mps, ktToMps(58));
-    close(a.targets.vy_mps, ktToMps(82));
-    close(a.limits.va_mps, ktToMps(107));
-    close(a.limits.vno_mps, ktToMps(160));
-    close(a.limits.vne_mps, ktToMps(200));
+    close(a.targets.stall_mps, ktToMps(49.5));
+    close(a.targets.vx_mps, ktToMps(50.4));
+    close(a.targets.vy_mps, ktToMps(71.3));
+    close(a.limits.va_mps, ktToMps(93.0));
+    close(a.limits.vno_mps, ktToMps(139.0));
+    close(a.limits.vne_mps, ktToMps(173.8));
     close(a.targets.climb_mps, fpmToMps(1130));
     expect(a.limits).toMatchObject({ gMax: 6, gMin: -5, invertedSystems: true });
     expect(a.targets).toMatchObject({ takeoffRoll_m: 177, landingRoll_m: 152 });
@@ -101,7 +101,7 @@ describe('validateAircraftData', () => {
 
   it('catches a speed entered in knots instead of m/s', () => {
     const bad = good();
-    bad.limits.vne_mps = 200; // obviously knots or mph
+    bad.limits.vne_mps = 200; // obviously not m/s
     expect(() => validateAircraftData(bad)).toThrow(/vne_mps = 200/);
   });
 

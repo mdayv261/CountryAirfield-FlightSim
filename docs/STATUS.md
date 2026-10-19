@@ -18,12 +18,13 @@
 - Gyro engine: McCulloch 4318, 65 hp (not Subaru). Stages 7 and 9 will use CHT and a 2-stroke sound for the gyro.
 - Pilot 90 kg; Air-Bike belt 2.5:1 with 60 in prop; field elevation 50 ft (15.24 m); default runway 36; knots on all aircraft.
 - Gyro rotor rpm: 200 minimum for take-off, 400 maximum.
+- Speeds are knots everywhere; mph is never used. Manufacturer mph figures are converted (x 0.869):
+  Air-Bike stall 24.3, cruise 47.8, Vne 69.5 kt; Decathlon stall 49.5, Vx 50.4, Vy 71.3, Va 93.0, Vno 139.0, Vne 173.8 kt.
 
 ## Known issues / open questions
 - Frame rate not yet confirmed in a browser (the Chrome extension was not connected during the build).
 - McCulloch 4318 rated rpm (4100) and direct drive are assumptions; confirm in Stage 6.
-- Super Decathlon speeds in CLAUDE.md are labelled knots. The published figures (stall 53 mph, Vne 200 mph, etc.) are mph. Settle which applies before Stage 5 tuning.
-- Air-Bike speeds in CLAUDE.md are knots, but the Build Plan lists mph (stall 28, cruise 55, Vne 80). Confirm before Stage 4.
+- Gyro speeds: CLAUDE.md says cruise 65 kt and max 95 kt. The Stage 6 prompt says "cruise 70 mph" (60.8 kt), and the Build Plan says max 100 mph (86.9 kt). Confirm before Stage 6.
 
 ## Next step
 Stage 2: terrain heightmap, runways, cones, taxiways, apron, buildings, windsock, trees, dam, sky gradient, clouds and a free-fly camera.
