@@ -163,6 +163,11 @@ export interface AeroData {
   rudderMax_deg: number;
   /** Share of the propeller slipstream's extra dynamic pressure that reaches the tail (tractor). */
   tailSlipstream: number;
+  /**
+   * Wing rigging incidence: how far the wing chord is set nose-up from the fuselage (body)
+   * axis, degrees. The tables are against the wing's angle, so alpha_wing = alpha_body + this.
+   */
+  wingIncidence_deg?: number;
 }
 
 /** Fixed-pitch or constant-speed propeller performance against advance ratio J = V / (n D). */
@@ -358,6 +363,7 @@ export function validateAircraftData(raw: unknown): AircraftData {
     num(a, 'aero.', 'oswald', 0.3, 1);
     for (const k of ['elevatorMax_deg', 'aileronMax_deg', 'rudderMax_deg']) num(a, 'aero.', k, 1, 60);
     num(a, 'aero.', 'tailSlipstream', 0, 1);
+    num(a, 'aero.', 'wingIncidence_deg', -5, 10, false);
   }
   if (raw.propeller !== undefined) {
     const pr = section('propeller');

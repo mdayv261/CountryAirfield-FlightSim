@@ -28,6 +28,7 @@ export interface AeroOutput {
   force: THREE.Vector3;
   moment: THREE.Vector3;
   airspeed: number;
+  /** Angle of attack of the wing (body angle + rigging incidence), rad: what an AoA gauge shows. */
   alpha: number;
   beta: number;
   dynamicPressure: number;
@@ -74,6 +75,8 @@ export class AeroModel {
   private readonly maxAileron: number;
   private readonly maxRudder: number;
   private readonly aspectRatio: number;
+  /** Wing rigging incidence, rad (wing chord nose-up from the body axis). */
+  readonly incidence: number;
   private readonly u = new THREE.Vector3();
   private readonly liftDir = new THREE.Vector3();
   private readonly sideDir = new THREE.Vector3();
@@ -90,6 +93,7 @@ export class AeroModel {
     this.maxAileron = degToRad(data.aileronMax_deg);
     this.maxRudder = degToRad(data.rudderMax_deg);
     this.aspectRatio = (span * span) / area;
+    this.incidence = degToRad(data.wingIncidence_deg ?? 0);
   }
 
   CLtable(alpha: number): number {
@@ -117,7 +121,10 @@ export class AeroModel {
       Object.assign(out, { alpha: 0, beta: 0, dynamicPressure: 0, CL: 0, CD: 0 });
       return out;
     }
-    const alpha = Math.atan2(-v.y, -v.z);
+    // Angle of the flow to the wing chord: the body's angle plus the wing's rigging incidence.
+    // All tables and the static pitching moment work on this; only the fuselage attitude
+    // differs, sitting `incidence` lower for the same flight condition.
+    const alpha = Math.atan2(-v.y, -v.z) + this.incidence;
     const beta = Math.asin(clamp(v.x / V, -1, 1));
     const qbar = 0.5 * input.density * V * V;
     // Rates in the pilot's sense: roll right, pitch up, yaw right.

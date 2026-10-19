@@ -26,6 +26,8 @@ const C = {
 const WING = { y: 0.85, zLE: -0.38, thickness: 0.12, aileronChord: 0.3, aileronStart: 2.0 };
 const TAIL = { z: 3.25, y: 0.22, stabSpan: 2.4, stabChord: 0.45, elevChord: 0.3, finHeight: 0.85, finChord: 0.45, rudderChord: 0.35 };
 const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
+/** Wing rigging incidence, rad (leading edge up from the fuselage axis). */
+const INCIDENCE = ((data.aero!.wingIncidence_deg ?? 0) * Math.PI) / 180;
 
 /** A round tube from a to b (low-poly cylinder). */
 function tube(b: ColouredMeshBuilder, from: THREE.Vector3, to: THREE.Vector3, r: number, colour: number): void {
@@ -71,10 +73,20 @@ export class AirBikeModel {
 
     // Wing: a thin slab with a red leading-edge stripe, cut back where the ailerons hinge.
     const fixedChord = CHORD - WING.aileronChord;
-    slab(b, 0, WING.y, WING.zLE + fixedChord / 2, SPAN, WING.thickness, fixedChord, C.fabric);
-    slab(b, 0, WING.y + 0.005, WING.zLE + 0.08, SPAN + 0.01, WING.thickness, 0.16, C.fabricTrim);
+    // The wing is rigged at a small incidence: rotate its parts nose-up about the mid-chord.
+    const rig = (z: number, y = WING.y) => {
+      const dz = z - wingMid;
+      return { y: y + dz * -Math.sin(INCIDENCE), z: wingMid + dz * Math.cos(INCIDENCE) };
+    };
+    const wingPart = (z: number, y: number, sx: number, sy: number, sz: number, colour: number) => {
+      const p = rig(z, y);
+      const m = new THREE.Matrix4().makeRotationX(INCIDENCE).setPosition(0, p.y, p.z);
+      b.add(new THREE.BoxGeometry(sx, sy, sz), colour, m);
+    };
+    wingPart(WING.zLE + fixedChord / 2, WING.y, SPAN, WING.thickness, fixedChord, C.fabric);
+    wingPart(WING.zLE + 0.08, WING.y + 0.005, SPAN + 0.01, WING.thickness, 0.16, C.fabricTrim);
     // Inboard of the ailerons the trailing edge is fixed.
-    slab(b, 0, WING.y, WING.zLE + fixedChord + WING.aileronChord / 2, WING.aileronStart * 2, WING.thickness * 0.6, WING.aileronChord, C.fabric);
+    wingPart(WING.zLE + fixedChord + WING.aileronChord / 2, WING.y, WING.aileronStart * 2, WING.thickness * 0.6, WING.aileronChord, C.fabric);
 
     // Steel-tube fuselage: keel, tail boom, cabane posts to the wing, seat frame.
     const nose = v(0, -0.55, -1.25);
@@ -142,9 +154,9 @@ export class AirBikeModel {
     const aileronSpan = SPAN / 2 - WING.aileronStart;
     this.aileronL = hingedX(aileronSpan, WING.aileronChord, WING.thickness * 0.6, C.fabric);
     this.aileronR = hingedX(aileronSpan, WING.aileronChord, WING.thickness * 0.6, C.fabric);
-    const aileronZ = WING.zLE + fixedChord;
-    this.aileronL.position.set(-(WING.aileronStart + aileronSpan / 2), WING.y, aileronZ);
-    this.aileronR.position.set(WING.aileronStart + aileronSpan / 2, WING.y, aileronZ);
+    const hinge = rig(WING.zLE + fixedChord);
+    this.aileronL.position.set(-(WING.aileronStart + aileronSpan / 2), hinge.y, hinge.z);
+    this.aileronR.position.set(WING.aileronStart + aileronSpan / 2, hinge.y, hinge.z);
     this.object.add(this.elevator, this.rudder, this.aileronL, this.aileronR);
 
     // Propeller: two wooden blades, plus a faint disc that shows when it is spinning fast.
@@ -174,8 +186,8 @@ export class AirBikeModel {
     // edge; a positive rotation about y swings it to the right.
     this.elevator.rotation.x = -p.elevator * a.elevatorMax_deg * deg; // stick back: trailing edge up
     this.rudder.rotation.y = this.aircraft.rudderApplied * a.rudderMax_deg * deg; // right pedal: trailing edge right
-    this.aileronR.rotation.x = -p.aileron * a.aileronMax_deg * deg; // stick right: right aileron up
-    this.aileronL.rotation.x = p.aileron * a.aileronMax_deg * deg; // ... and left aileron down
+    this.aileronR.rotation.x = INCIDENCE - p.aileron * a.aileronMax_deg * deg; // stick right: right aileron up
+    this.aileronL.rotation.x = INCIDENCE + p.aileron * a.aileronMax_deg * deg; // ... and left aileron down
 
     // +z points back at the pilot, so clockwise as the pilot sees it is a negative angle about z.
     const pp = this.aircraft.powerplant.out;

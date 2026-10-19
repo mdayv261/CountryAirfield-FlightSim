@@ -40,7 +40,8 @@ describe('tables', () => {
 describe('aerodynamics', () => {
   it('measures angle of attack and sideslip from the airflow', () => {
     const o = model.compute(input({ airVelocityBody: flow(20, 6, -3) }));
-    expect(o.alpha / deg).toBeCloseTo(6, 6);
+    // Reported alpha is the wing's: the body angle plus the wing's rigging incidence.
+    expect(o.alpha / deg).toBeCloseTo(6 + data.aero!.wingIncidence_deg!, 6);
     expect(o.beta / deg).toBeCloseTo(-3, 6);
     expect(o.airspeed).toBeCloseTo(20, 9);
   });

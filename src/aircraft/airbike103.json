@@ -49,7 +49,7 @@
       {
         "name": "tailwheel",
         "kind": "wheel",
-        "position_m": [0, -0.15, 3.5],
+        "position_m": [0, -0.26, 3.5],
         "spring_N_per_m": 6000,
         "damper_Ns_per_m": 300,
         "travel_m": 0.08,
@@ -116,7 +116,8 @@
     "elevatorMax_deg": 25,
     "aileronMax_deg": 18,
     "rudderMax_deg": 25,
-    "tailSlipstream": 0.5
+    "tailSlipstream": 0.5,
+    "wingIncidence_deg": 1.6
   },
   "propeller": {
     "pitch_m": 0.7112,
@@ -160,7 +161,7 @@
     "Belt reduction 2.5:1 with 60x28 in prop (user confirmed).",
     "Fuel density 0.74 kg/L for 2-stroke petrol/oil mix.",
     "Gear and inertia are Stage 3 engineering estimates, to be refined in Stage 4.",
-    "Gear: mains 0.25 m ahead of CG, 1.5 m track; steerable tailwheel (assumed, +/-30 deg) 3.75 m behind the mains; about 12.5 deg nose-up on the ground (tall ultralight main gear).",
+    "Gear: mains 0.25 m ahead of CG, 1.5 m track; steerable tailwheel (assumed, +/-30 deg) 3.75 m behind the mains; fuselage about 11 deg nose-up on the ground (wing about 12.5 deg with its 1.6 deg incidence; tall ultralight main gear).",
     "Struts sized for ~4 cm static compression on the mains and ~0.5 critical damping.",
     "Inertia from Roskam radii of gyration for light singles (Rx 0.248, Ry 0.338, Rz 0.393) with an assumed 5.4 m length.",
     "Stage 4 flight model (estimates tuned to the CLAUDE.md targets; see docs/STATUS.md):",
@@ -168,6 +169,7 @@
     "Hirth F-33 full-throttle curve shaped from the 20.6 kW at 6500 rpm rating; single cylinder two-stroke; 2.5:1 belt at 95%.",
     "Aero: CLalpha ~4.7/rad, zero-lift alpha -4.6 deg (cambered ultralight section), CLmax 1.82 at 18 deg; CD0 0.085 (open frame, exposed pilot, struts and wires); induced drag k = 1/(pi e AR) with whole-aircraft e 0.9, AR 5.96. Beyond the stall CL/CD blend into flat-plate values.",
     "Propeller 60x28 in fixed-pitch wood: CT/CP curves shaped for P/D 0.47, peak efficiency ~0.75 near J 0.4-0.5; loading set so static rpm is ~5300 and full-power level rpm ~6700 (typical F-33 installation).",
+    "Wing rigging incidence 1.6 deg (user check 2026-10-19): fuselage attitude reads 0 deg in level flight at 75% throttle (~47 kt), about +10 deg in the full-power climb at Vy and about -10 deg in a 45 kt idle descent.",
     "Tuned (Stage 4) so cruise at 75% power ~47 kt and full-power level speed stays under the Part 103 limit of 55 kt."
   ]
 }

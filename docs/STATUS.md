@@ -44,6 +44,11 @@
   - Views (V cycles them): chase (follows heading, not bank), cockpit (pilot's eye, engine shake, drag to look),
     free camera. HUD on the left: IAS kt, ALT and AGL ft, VSI fpm, heading, rpm, throttle, fuel, G, AoA, slip ball,
     and a STALL warning 3° before the stalling angle.
+  - Pitch attitudes (user check, flown as a pilot would; test within ±2°): 0.1° level at 75% throttle (47 kt),
+    +9.8° in the full-power climb at 39 kt, −10.9° in an idle descent at 45 kt. Achieved with a 1.6° wing rigging
+    incidence (`aero.wingIncidence_deg`; tables are against the wing's angle, so flight performance is unchanged)
+    and the tailwheel lowered so the wing's ground angle is as before (fuselage ~11° nose-up at rest).
+    With the stick held neutral the attitudes differ (about −3°, +7°, +10°), because neutral stick holds ~40 kt.
   - Auto-coordinated rudder (U, or the controls screen; saved; off by default; HUD shows AUTO-RUDDER):
     a PI controller on sideslip plus a washed-out yaw damper (it damps sudden yaw but not a steady turn), added to
     the pilot's rudder in flight only (inactive on the ground and fading in from 15 to 25 kt). In an aileron-only
@@ -95,7 +100,7 @@
 - Measured in Chrome on the Mac mini M4 (2560x1440 display at 75 Hz): 75 fps, mean frame 13.34 ms,
   p95 13.6 ms, max 14.4 ms over 300 frames, so no dropped frames. The browser locks to the display's 75 Hz refresh.
   Physics holds 120 Hz. P pauses (physics 0 Hz, render continues) and resumes cleanly. No console errors.
-- Tests: 140 passing (auto-rudder and the joystick profile added since; Stage 4 added aero, powerplant and Air-Bike performance/circuit suites; Stage 3 added rigid body, atmosphere, wind, gear and input suites). Highlights: free fall matches ½gt²;
+- Tests: 141 passing (pitch-attitude check, auto-rudder and the joystick profile added since; Stage 4 added aero, powerplant and Air-Bike performance/circuit suites; Stage 3 added rigid body, atmosphere, wind, gear and input suites). Highlights: free fall matches ½gt²;
   a torque-free tumble (with the intermediate-axis flip) conserves energy to 1e-6; an undamped strut bounce returns to its
   release height within 1%; all three aircraft settle at rest on their wheels (loads sum to weight, struts compress by load/k,
   taildraggers 8–13° nose-up); braking stops in v²/(2μg) on gravel and grass; rolling coast distance follows the rolling
@@ -120,6 +125,8 @@
 - Body axes are three.js-style (x right, y up, z aft) rather than the aero convention (x forward, y right, z down),
   so models and physics share one frame. Aero code in Stages 4–6 must use alpha = atan2(−v_y, −v_z) and beta from v_x.
 - Reported wind is the 10 m wind; aloft it is up to 1.6× stronger (shear). The windsock at about 10 m reads the reported value.
+- Pitch-attitude targets (0° / +10° / −10°) are pilot-flown attitudes (level 75% throttle, Vy climb, 45 kt idle descent),
+  not hands-off; decided 2026-10-19.
 - Grass runway "30 m east" means the centrelines are 30 m apart (confirmed by user 2026-10-19), leaving 6 m of grass between the edges.
 - Pilot 90 kg; Air-Bike belt 2.5:1 with 60 in prop; field elevation 50 ft (15.24 m); default runway 36; knots on all aircraft.
 - Gyro rotor rpm: 200 minimum for take-off, 400 maximum.

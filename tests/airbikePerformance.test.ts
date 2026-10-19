@@ -3,7 +3,7 @@ import { AIRCRAFT } from '../src/aircraft';
 import { fpmToMps, mpsToFpm, mpsToKt } from '../src/core/units';
 import { RUNWAYS } from '../src/world/layout';
 import { flyCircuit, type CircuitSpeeds } from './helpers/circuit';
-import { fly, makeWorld, startInFlight, TestPilot } from './helpers/testPilot';
+import { attitude, fly, makeWorld, startInFlight, TestPilot } from './helpers/testPilot';
 
 // Automated flight tests of the Air-Bike 103 against CLAUDE.md (±10 %).
 // Test mass: empty 112 kg + pilot 90 kg + full fuel (19 L x 0.74 kg/L) = 216 kg.
@@ -21,7 +21,8 @@ const within10 = (value: number, target: number) => {
   expect(value).toBeGreaterThan(target * 0.9);
   expect(value).toBeLessThan(target * 1.1);
 };
-const THREE_POINT = (12 * Math.PI) / 180;
+// Fuselage attitude for the three-point lift-off/touchdown (wing about 1.6° higher, its rigging incidence).
+const THREE_POINT = (10.4 * Math.PI) / 180;
 const SPEEDS: CircuitSpeeds = { climbKt: 39, circuitKt: 45, approachKt: 33, threePointPitch: THREE_POINT };
 const LONG = 120_000; // ms: these fly minutes of simulated time
 
@@ -96,6 +97,35 @@ describe('Air-Bike 103 performance', () => {
     }
     console.info(`best climb ${best.toFixed(0)} fpm (target ${T.climbFpm.toFixed(0)})`);
     within10(best, T.climbFpm);
+  }, LONG);
+
+  // Fuselage pitch attitudes in the three standard power conditions, flown as a pilot would
+  // (user check, 2026-10-19): 0° in level flight at 75 % throttle, about +10° in the full-power
+  // climb at best-rate speed, about −10° in an idle descent at 45 kt. Within ±2°.
+  const pitchAttitude = (throttle: number, hold: 'level' | number, startKt: number) => {
+    const { world, ac } = makeWorld();
+    startInFlight(ac, 1500, startKt);
+    const pilot = new TestPilot(ac);
+    let sum = 0;
+    let n = 0;
+    fly(world, 150, (t) => {
+      ac.pilot.throttle = throttle;
+      if (hold === 'level') pilot.holdAltitude(1500);
+      else pilot.holdSpeedWithPitch(hold);
+      pilot.bankTo(0);
+      if (t > 90) {
+        sum += attitude(ac).pitch;
+        n++;
+      }
+    });
+    const deg = (sum / n) * (180 / Math.PI);
+    console.info(`pitch attitude ${deg.toFixed(1)}° at ${(throttle * 100).toFixed(0)} % throttle, ${mpsToKt(ac.state.ias).toFixed(0)} kt`);
+    return deg;
+  };
+  it('pitch attitude: 0° level at 75 % throttle, +10° full-power climb, −10° idle descent', () => {
+    expect(Math.abs(pitchAttitude(0.75, 'level', 47))).toBeLessThan(2);
+    expect(Math.abs(pitchAttitude(1, 39, 39) - 10)).toBeLessThan(2);
+    expect(Math.abs(pitchAttitude(0, 45, 45) + 10)).toBeLessThan(2);
   }, LONG);
 
   for (const [name, x] of [['gravel', RUNWAYS.gravel.cx], ['grass', RUNWAYS.grass.cx]] as const) {
