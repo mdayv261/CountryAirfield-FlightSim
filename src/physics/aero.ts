@@ -136,6 +136,8 @@ export class AeroModel {
     const dr = clamp(input.controls.rudder, -1, 1) * this.maxRudder;
     // Tail surfaces see the free stream plus part of the propeller slipstream.
     const tailRatio = 1 + (d.tailSlipstream * input.slipstreamPressure) / qbar;
+    // Rudder blanking in a deep stall (optional table).
+    const rudderRatio = tailRatio * (d.rudderFactor ? interp(this.alphaTable, d.rudderFactor, alpha) : 1);
 
     // Lift and drag. Rate terms are written so that V cancels: damping ∝ ρ V, no 1/V blow-up.
     const CLbasic = this.CLtable(alpha);
@@ -145,7 +147,7 @@ export class AeroModel {
       this.CDtable(alpha) -
       (1 - this.groundEffect(input.heightAboveGround)) * induced +
       d.CDcontrol * (de * de + da * da + dr * dr);
-    const CY = d.CYbeta * Math.sin(beta) + d.CYdr * dr * tailRatio;
+    const CY = d.CYbeta * Math.sin(beta) + d.CYdr * dr * rudderRatio;
 
     const ph = (p * this.span) / (2 * V);
     const qh = (q * this.chord) / (2 * V);
@@ -154,7 +156,8 @@ export class AeroModel {
     const Cl = d.Clbeta * Math.sin(beta) + rollDamping * ph + d.Clr_perCL * CLbasic * rh + d.Clda * da;
     const Cm =
       d.Cm0 + d.Cmalpha * Math.sin(alpha) + interp(this.alphaTable, d.CmExtra, alpha) + d.Cmq * qh + d.Cmde * de * tailRatio;
-    const Cn = d.Cnbeta * Math.sin(beta) + d.Cnr * rh + d.Cnp_perCL * CLbasic * ph + d.Cndr * dr * tailRatio + d.Cnda * da;
+    const yawDamping = d.Cnr * (d.yawDampingFactor ? interp(this.alphaTable, d.yawDampingFactor, alpha) : 1);
+    const Cn = d.Cnbeta * Math.sin(beta) + yawDamping * rh + d.Cnp_perCL * CLbasic * ph + d.Cndr * dr * rudderRatio + d.Cnda * da;
 
     // Force directions: drag against the motion, lift ⟂ motion in the plane of symmetry
     // (right wing × motion), side force completing the right-handed set.

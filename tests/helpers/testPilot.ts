@@ -42,7 +42,7 @@ export function startInFlight(ac: FixedWingAircraft, heightM: number, speedKt: n
   const h = (headingDeg * Math.PI) / 180;
   ac.body.velocity.set(Math.sin(h), 0, -Math.cos(h)).multiplyScalar(ktToMps(speedKt));
   ac.powerplant.start();
-  ac.powerplant.omega = (5500 / 60) * 2 * Math.PI;
+  ac.powerplant.omega = ((0.9 * ac.data.propulsion.ratedRpm) / 60) * 2 * Math.PI;
 }
 
 /** PI(D) controller with output limits and anti-windup. */

@@ -222,10 +222,18 @@ const axisBinding = (d: DeviceSnapshot, index: number, deadzone: number, invert 
   cal: { min: -1, max: 1, centre: 0, deadzone, invert },
 });
 
+const buttonBinding = (d: DeviceSnapshot, index: number): Binding => ({
+  deviceId: d.id,
+  kind: 'button',
+  index,
+  cal: { min: 0, max: 1, centre: 0, deadzone: 0, invert: false },
+});
+
 export const DEVICE_PROFILES: DeviceProfile[] = [
   {
     // Logitech Extreme 3D Pro: X, Y, then axis 5 = twist (rudder), axis 6 = throttle slider
-    // (reads −1 pushed fully forward, so inverted), axis 9 = hat switch.
+    // (reads −1 pushed fully forward, so inverted), axis 9 = hat switch. Trigger (button 0) =
+    // both toe brakes; the sim shares a single brake out with the rudder for steering.
     match: /extreme 3d/i,
     bindings: (d) => ({
       roll: axisBinding(d, 0, GAMEPAD.deadzone),
@@ -233,6 +241,8 @@ export const DEVICE_PROFILES: DeviceProfile[] = [
       // A twist grip has more slop around centre than the stick, so a wider dead zone.
       yaw: axisBinding(d, 5, 0.1),
       throttle: axisBinding(d, 6, 0.02, true),
+      brakeLeft: buttonBinding(d, 0),
+      brakeRight: buttonBinding(d, 0),
     }),
   },
 ];

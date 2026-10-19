@@ -134,6 +134,13 @@ export interface AeroData {
   CmExtra: number[];
   /** Multiplier on roll damping Clp at each alpha (drops, even reverses, when stalled), same grid. */
   rollDampingFactor: number[];
+  /** Optional multiplier on yaw damping Cnr at each alpha (falls in a deep stall: spins), same grid. */
+  yawDampingFactor?: number[];
+  /**
+   * Optional multiplier on rudder power at each alpha, same grid. In a deep stall the fin and
+   * rudder sit in the wake of the stalled wing and tailplane and lose much of their bite.
+   */
+  rudderFactor?: number[];
   /** Span efficiency for the induced-drag part, used for ground effect. */
   oswald: number;
   CLq: number;
@@ -185,6 +192,29 @@ export interface PropellerData {
   inertia_kgm2: number;
   /** Direction of rotation seen from the cockpit looking forward. */
   rotation: 'clockwise' | 'anticlockwise';
+  /**
+   * P-factor: at angle of attack the descending blade takes a bigger bite, moving the thrust
+   * centre sideways by pFactor x radius x sin(flow angle to the axis). Typically 0.2–0.5.
+   */
+  pFactor?: number;
+  /**
+   * Slipstream swirl: the corkscrewing slipstream strikes one side of the fin. Yaw moment
+   * coefficient per unit of slipstream dynamic pressure (on wing area and span).
+   */
+  swirlYawCn?: number;
+  /** Present for a constant-speed propeller: governor and blade pitch range. */
+  constantSpeed?: {
+    /** Engine rpm with the lever fully back and fully forward. */
+    rpmMin: number;
+    rpmMax: number;
+    /** Blade pitch range as multiples of the reference pitch of the CT/CP tables. */
+    pitchScaleMin: number;
+    pitchScaleMax: number;
+    /** Pitch-scale rate per unit fractional rpm error, 1/s. */
+    governorGain: number;
+    /** Fastest pitch change the hub can make, pitch scale per second. */
+    pitchRateMax: number;
+  };
 }
 
 export interface EngineData {
@@ -357,6 +387,8 @@ export function validateAircraftData(raw: unknown): AircraftData {
     ascending(a, 'aero.', 'alpha_deg');
     const n = Array.isArray(a.alpha_deg) ? a.alpha_deg.length : undefined;
     for (const k of ['CL', 'CD', 'CmExtra', 'rollDampingFactor']) numArray(a, 'aero.', k, n);
+    if (a.yawDampingFactor !== undefined) numArray(a, 'aero.', 'yawDampingFactor', n);
+    if (a.rudderFactor !== undefined) numArray(a, 'aero.', 'rudderFactor', n);
     for (const k of ['CLq', 'CLde', 'CYbeta', 'CYdr', 'Clbeta', 'Clp', 'Clr_perCL', 'Clda', 'Cm0', 'Cmalpha', 'Cmq', 'Cmde',
       'Cnbeta', 'Cnr', 'Cnp_perCL', 'Cndr', 'Cnda', 'CDcontrol'])
       num(a, 'aero.', k, -50, 50);
@@ -378,6 +410,17 @@ export function validateAircraftData(raw: unknown): AircraftData {
     numArray(pr, 'propeller.', 'CP', n);
     num(pr, 'propeller.', 'inertia_kgm2', 0.001, 50);
     oneOf(pr, 'propeller.', 'rotation', ['clockwise', 'anticlockwise']);
+    num(pr, 'propeller.', 'pFactor', 0, 2, false);
+    num(pr, 'propeller.', 'swirlYawCn', 0, 0.1, false);
+    if (pr.constantSpeed !== undefined) {
+      const cs = isObj(pr.constantSpeed) ? pr.constantSpeed : {};
+      num(cs, 'propeller.constantSpeed.', 'rpmMin', 500, 10_000);
+      num(cs, 'propeller.constantSpeed.', 'rpmMax', 500, 10_000);
+      num(cs, 'propeller.constantSpeed.', 'pitchScaleMin', 0.2, 5);
+      num(cs, 'propeller.constantSpeed.', 'pitchScaleMax', 0.2, 5);
+      num(cs, 'propeller.constantSpeed.', 'governorGain', 0.01, 100);
+      num(cs, 'propeller.constantSpeed.', 'pitchRateMax', 0.01, 10);
+    }
     if (typeof p.propDiameter_m !== 'number') problems.push('a propeller needs propulsion.propDiameter_m');
   }
   if (raw.engine !== undefined) {

@@ -154,6 +154,14 @@ describe('devices', () => {
       expect(g.read('throttle')).toBe(0);
     });
 
+    it('uses the trigger as the brakes', () => {
+      const pad = fakePad(ID, [0, 0, 0, 0, 0, 0, 1, 0, 0, 1.286], [1, 0, 0, 0]);
+      const g = new GamepadInput(() => [pad], memoryStorage());
+      g.poll();
+      expect(g.read('brakeLeft')).toBe(1);
+      expect(g.read('brakeRight')).toBe(1);
+    });
+
     it('adds rudder and throttle to bindings saved before the profile existed, keeping user changes', () => {
       const storage = memoryStorage();
       const old = { deviceId: ID, kind: 'axis', cal: { min: -1, max: 1, centre: 0, deadzone: 0.05, invert: false } };

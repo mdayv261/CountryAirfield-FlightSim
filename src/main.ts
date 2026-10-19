@@ -17,6 +17,9 @@ import { TestBlockMesh } from './world/testBlockMesh';
 import { mpsToKt } from './core/units';
 import { FixedWingAircraft } from './physics/FixedWingAircraft';
 import { AirBikeModel } from './aircraft/models/airbike103Model';
+import { DecathlonModel } from './aircraft/models/decathlonModel';
+import type { AircraftModel } from './aircraft/models/AircraftModel';
+import type { ControlState } from './input/controls';
 import { AircraftCamera, type AircraftView } from './ui/AircraftCamera';
 import { Hud } from './ui/Hud';
 import { RUNWAYS } from './world/layout';
@@ -84,9 +87,20 @@ const throwBlock = () => {
   if (!blockMesh.object.parent) scene.add(blockMesh.object);
 };
 
-// The Air-Bike 103. Spawn points on both runways, both directions (keys 7, 8, 9, 0).
-const aircraft = new FixedWingAircraft(AIRCRAFT.airbike103);
-const aircraftModel = new AirBikeModel(aircraft);
+// The aircraft (Tab switches). Spawn points on both runways, both directions (keys 7, 8, 9, 0).
+const FLEET: Array<{ aircraft: FixedWingAircraft; model: AircraftModel }> = [
+  (() => {
+    const ac = new FixedWingAircraft(AIRCRAFT.airbike103);
+    return { aircraft: ac, model: new AirBikeModel(ac) };
+  })(),
+  (() => {
+    const ac = new FixedWingAircraft(AIRCRAFT.decathlon8kcab);
+    return { aircraft: ac, model: new DecathlonModel(ac) };
+  })(),
+];
+let fleetIndex = 0;
+let aircraft = FLEET[0].aircraft;
+let aircraftModel = FLEET[0].model;
 scene.add(aircraftModel.object);
 physics.add(aircraft);
 const hud = new Hud(container, aircraft);
@@ -109,6 +123,28 @@ const spawn = (i: number) => {
   aircraftCam.reset();
 };
 spawn(0);
+/** Swap to another aircraft at the same spawn point. */
+const selectAircraft = (i: number) => {
+  physics.remove(aircraft);
+  scene.remove(aircraftModel.object);
+  fleetIndex = i;
+  ({ aircraft, model: aircraftModel } = FLEET[i]);
+  physics.add(aircraft);
+  scene.add(aircraftModel.object);
+  hud.setAircraft(aircraft);
+  spawn(spawnIndex);
+};
+/**
+ * Toe brakes. With separate left and right brake inputs (pedals), use them as they are.
+ * With a single brake control (B key or joystick trigger), share it out with the rudder:
+ * right rudder brakes the right wheel more, left the left, as most simulators do, so a
+ * taildragger can still be steered by differential braking without pedals.
+ */
+function toeBrakes(c: ControlState): [number, number] {
+  if (Math.abs(c.brakeLeft - c.brakeRight) > 1e-3) return [c.brakeLeft, c.brakeRight];
+  const b = c.brakeLeft;
+  return [b * Math.min(1, 1 - c.yaw), b * Math.min(1, 1 + c.yaw)];
+}
 type View = AircraftView | 'free';
 const VIEWS: View[] = ['chase', 'cockpit', 'free'];
 let view: View = 'chase';
@@ -131,13 +167,15 @@ const loop = new GameLoop({
       Object.assign(block.controls, { throttle: c.throttle, pedals: c.yaw, brakeLeft: c.brakeLeft, brakeRight: c.brakeRight });
     } else {
       aircraft.autoRudderEnabled = input.aids.autoRudder;
+      const [brakeLeft, brakeRight] = toeBrakes(c);
       Object.assign(aircraft.pilot, {
         elevator: c.pitch,
         aileron: c.roll,
         rudder: c.yaw,
         throttle: c.throttle,
-        brakeLeft: c.brakeLeft,
-        brakeRight: c.brakeRight,
+        brakeLeft,
+        brakeRight,
+        propLever: c.propLever,
       });
       Object.assign(block.controls, { throttle: 0, pedals: 0, brakeLeft: 0, brakeRight: 0 });
     }
@@ -153,7 +191,7 @@ const loop = new GameLoop({
     calibration.update();
     aircraftModel.update(alpha, loop.paused ? 0 : dt);
     if (view === 'free') freeCam.update(dt);
-    else aircraftCam.update(aircraft, aircraftModel.object, dt);
+    else aircraftCam.update(aircraftModel, dt);
     hud.visible = view !== 'free';
     const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(aircraftModel.object.quaternion);
     hud.update(((Math.atan2(fwd.x, -fwd.z) * 180) / Math.PI + 360) % 360);
@@ -205,6 +243,7 @@ function statusLines(): string[] {
 }
 
 keyboard.onPress('KeyP', () => loop.togglePause());
+keyboard.onPress('Tab', () => selectAircraft((fleetIndex + 1) % FLEET.length));
 keyboard.onPress('KeyU', () => input.setAutoRudder(!input.aids.autoRudder));
 keyboard.onPress('KeyV', () => setView(VIEWS[(VIEWS.indexOf(view) + 1) % VIEWS.length]));
 keyboard.onPress('KeyE', () => (aircraft.powerplant.running ? aircraft.powerplant.stop() : aircraft.powerplant.start()));
@@ -243,11 +282,18 @@ window.addEventListener('resize', () => {
 });
 // Keep keys like arrows and PageUp from scrolling the page while flying.
 window.addEventListener('keydown', (e) => {
-  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End', 'Space'].includes(e.code)) e.preventDefault();
+  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End', 'Space', 'Tab'].includes(e.code)) e.preventDefault();
 });
 
 // Handy for inspection from the browser console.
-Object.assign(window, { sim: { scene, camera, heightfield, freeCam, measure, renderer, physics, block, input, throwBlock, aircraft, spawn, setView } });
+Object.assign(window, {
+  sim: {
+    scene, camera, heightfield, freeCam, measure, renderer, physics, block, input, throwBlock, spawn, setView, selectAircraft,
+    get aircraft() {
+      return aircraft;
+    },
+  },
+});
 
 console.info('Aircraft data loaded:', Object.values(AIRCRAFT).map((a) => a.name).join(', '));
 loop.start();

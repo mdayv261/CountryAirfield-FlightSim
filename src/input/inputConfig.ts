@@ -40,5 +40,5 @@ export const GAMEPAD = {
    * get any newly defaulted channels added to existing saved bindings (never overwriting).
    */
   defaultsVersionKey: 'cfs.input.defaultsVersion',
-  defaultsVersion: 2,
+  defaultsVersion: 3,
 };

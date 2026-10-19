@@ -101,16 +101,17 @@ describe('Air-Bike 103 performance', () => {
 
   // Fuselage pitch attitudes in the three standard power conditions, flown as a pilot would
   // (user check, 2026-10-19): 0° in level flight at 75 % throttle, about +10° in the full-power
-  // climb at best-rate speed, about −10° in an idle descent at 45 kt. Within ±2°.
-  const pitchAttitude = (throttle: number, hold: 'level' | number, startKt: number) => {
+  // climb at best-rate speed, about −10° in an idle descent at 45 kt. Within ±2°. Flown at
+  // 1,000 ft above the field: much higher, the engine's power falls off with the thinner air.
+  const pitchAttitude = (throttle: number, hold: 'level' | number, startKt: number, startHeight = 300) => {
     const { world, ac } = makeWorld();
-    startInFlight(ac, 1500, startKt);
+    startInFlight(ac, startHeight, startKt);
     const pilot = new TestPilot(ac);
     let sum = 0;
     let n = 0;
     fly(world, 150, (t) => {
       ac.pilot.throttle = throttle;
-      if (hold === 'level') pilot.holdAltitude(1500);
+      if (hold === 'level') pilot.holdAltitude(300);
       else pilot.holdSpeedWithPitch(hold);
       pilot.bankTo(0);
       if (t > 90) {
@@ -125,7 +126,8 @@ describe('Air-Bike 103 performance', () => {
   it('pitch attitude: 0° level at 75 % throttle, +10° full-power climb, −10° idle descent', () => {
     expect(Math.abs(pitchAttitude(0.75, 'level', 47))).toBeLessThan(2);
     expect(Math.abs(pitchAttitude(1, 39, 39) - 10)).toBeLessThan(2);
-    expect(Math.abs(pitchAttitude(0, 45, 45) + 10)).toBeLessThan(2);
+    // The idle descent starts higher (it sinks ~1,000 fpm); at idle the thin-air power loss is irrelevant.
+    expect(Math.abs(pitchAttitude(0, 45, 45, 1200) + 10)).toBeLessThan(2);
   }, LONG);
 
   for (const [name, x] of [['gravel', RUNWAYS.gravel.cx], ['grass', RUNWAYS.grass.cx]] as const) {
@@ -174,6 +176,7 @@ describe('Air-Bike 103 circuits', () => {
       // Stopped on the runway it landed on.
       expect(Math.abs(r.stopPoint.x - c.rect.cx)).toBeLessThan(c.rect.sizeX / 2);
       expect(Math.abs(r.stopPoint.z)).toBeLessThan(RUNWAYS.length / 2);
+      expect(Math.abs(r.touchdownZ)).toBeLessThan(RUNWAYS.length / 2);
       console.info(`${c.name}: touchdown ${r.touchdownKt.toFixed(1)} kt, ${r.touchdownSink.toFixed(2)} m/s, landing roll ${r.landingRoll.toFixed(0)} m`);
     }, LONG);
   }

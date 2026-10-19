@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { ktToMps } from '../src/core/units';
+import { ktToMps, mpsToKt } from '../src/core/units';
 import { PHYSICS_DT } from '../src/core/constants';
 import { AutoRudder } from '../src/physics/autoRudder';
-import { attitude, fly, makeWorld, startInFlight, TestPilot } from './helpers/testPilot';
+import { attitude, fly, makeWorld, Pid, startInFlight, TestPilot } from './helpers/testPilot';
 
 const deg = Math.PI / 180;
 
@@ -38,21 +38,26 @@ describe('auto-coordinated rudder', () => {
     expect(mid).toBeLessThan(full);
   });
 
-  /** Roll into a 30° bank with ailerons only (feet off the pedals) and record the worst sideslip. */
+  /**
+   * Roll into a 30° bank with ailerons only (feet off the pedals) and record the worst sideslip.
+   * The test pilot holds the bank with a PI loop (a high wing overbanks in a turn) and holds
+   * 45 kt with the throttle, so the turn stays steady rather than running down towards the stall.
+   */
   function aileronOnlyTurn(aid: boolean): number {
     const { world, ac } = makeWorld();
-    startInFlight(ac, 300, 40);
+    startInFlight(ac, 300, 45);
     ac.autoRudderEnabled = aid;
     const pilot = new TestPilot(ac);
+    const bankLoop = new Pid(2, 1.5);
+    const speedLoop = new Pid(0.08, 0.05, 0, 1, 0.6);
     let worst = 0;
     fly(world, 25, (t) => {
       const bank = t > 3 ? 30 * deg : 0;
-      const a = attitude(ac);
       const p = -ac.body.angularVelocity.z;
-      ac.pilot.aileron = Math.max(-1, Math.min(1, 2 * (bank - a.bank) - 0.6 * p));
+      ac.pilot.aileron = bankLoop.update(bank - attitude(ac).bank, -0.6 * p);
       ac.pilot.rudder = 0;
       pilot.holdAltitude(300);
-      pilot.holdPower(0.75);
+      ac.pilot.throttle = speedLoop.update(45 - mpsToKt(ac.state.ias));
       if (t > 3) worst = Math.max(worst, Math.abs(ac.state.beta));
     });
     return worst;

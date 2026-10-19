@@ -1,7 +1,7 @@
 # Project Status
 
-**Current stage:** 4 – Air-Bike 103 (complete; automated exit checks pass 2026-10-19; your hand-flown circuits still to confirm)
-**Next stage:** 5 – Super Decathlon
+**Current stage:** 5 – Super Decathlon (complete; automated exit checks pass 2026-10-19; hand-flown aerobatics still to confirm)
+**Next stage:** 6 – Gyro (Bensen B-8M)
 
 ## What works
 - Vite 8 + TypeScript 7 (strict) + Three.js r186 + Vitest 4. Scripts: `npm run dev`, `npm test`, `npm run build`, `npm run preview`, `npm run typecheck`.
@@ -26,6 +26,33 @@
   - Sky: gradient dome shader with a sun disc and glow (sun azimuth 25°, elevation 52°, northern sky), with matching horizon fog.
   - Altocumulus: rows of lumpy cloudlets (6 lobes each, instanced), 22 km square layer, every lobe between 3,000 and 4,500 m.
   - Sun shadows (2048 map) over an 800 m square around the airfield. Logarithmic depth buffer.
+- **Stage 5 Super Decathlon** (flyable; Tab switches aircraft):
+  - New shared physics: constant-speed propeller (blade pitch scale s: CT = s·CT(J/s), CP = s²·CP(J/s)) with a
+    rate-limited governor set by the rpm lever (2000–2700 rpm; on the fine stop it acts as fixed pitch);
+    Gagg–Ferrar altitude power lapse; manifold pressure; P-factor (thrust centre shift ∝ sin of flow angle);
+    gyroscopic precession −ω × H of prop and crank; spool-up torque reaction (dH/dt); slipstream swirl on the fin;
+    negative-g fuel and oil starvation for engines without inverted systems (the Air-Bike), none for the Decathlon.
+  - G monitoring: filtered G-meter with max/min tell-tales, warning within 10% of +6/−5 g, latched OVER-STRESS,
+    VNE warning and latched over-speed. Backspace (respawn) resets them.
+  - Aero additions: optional yaw-damping and rudder-effectiveness tables against alpha (spins, deep-stall rudder blanking).
+  - Decathlon data: near-symmetric section (CLmax 1.42, CLmin −1.17), CD0 0.038, e 0.72, 1.5° incidence,
+    74 in Hartzell constant-speed prop, AEIO-360 curve, roll damping reversing at 20–35° alpha.
+    The post-stall pitch break means full aft stick settles at about 26° alpha (no deep-stall trap).
+  - Procedural Decathlon model (lofted fuselage, tandem cabin glazing, strut-braced high wing at incidence, spring gear,
+    red sunburst trim, metal prop). Models now share an `AircraftModel` base (pose interpolation, surfaces, prop blur).
+  - HUD adds aircraft name, MAP (inHg) and prop rpm setting, G with max/min, and warnings (STALL, G LIMIT,
+    OVER-STRESS, VNE, FUEL STARVED, LOW OIL). Home/End = prop rpm lever.
+  - Brakes: B key or joystick trigger (Extreme 3D Pro profile, defaults version 3). A single brake input is shared
+    out with the rudder (differential braking for steering a taildragger without pedals).
+  - Decathlon performance tests (791 kg, ISA): stall 45.9 kt (target 49, −6%); best climb 1179 fpm (1130, +4%)
+    at Vy 76 kt (71, +7%); Vx 54 kt (50, +8%); cruise 119.3 kt TAS at 75% power, 7,500 ft (122, −2%);
+    take-off roll 177 m on gravel, lift-off 57 kt (177, 0%); circuit and landing on gravel 36: touchdown 49 kt,
+    1.45 m/s, roll 156 m with steady braking (152, +3%).
+  - Aerobatics (automated pilot): loop 11.6 s at up to 5.0 g, 37 kt over the top, ±3 m; aileron roll 360° in 4.2 s;
+    stall turn: pivot 207°, heading reversed 177°, back at entry height; spin: 186°/s at 28° alpha, recovers in
+    0.14 turns, 249 m total; 20 s inverted holding height to 9 m at 84% power, oil 100%.
+    G-limit warning/over-stress flags (+6/−5 g) and over-speed tested. Air-Bike starves under negative g.
+  - Browser: 75 fps (13.33 ms mean, p95 14.8 ms) with the Decathlon; physics 120 Hz; no console errors.
 - **Stage 4 Air-Bike 103** (flyable):
   - `aero.ts`: coefficient build-up. CL/CD from ±180° alpha tables (stall break at 19°, flat-plate beyond), stability and
     control derivatives (Cm_alpha, Cm_q, Cn_beta, Cl_beta, Cl_p, Cn_r, control powers, adverse yaw), stall pitch break and
@@ -102,7 +129,7 @@
 - Measured in Chrome on the Mac mini M4 (2560x1440 display at 75 Hz): 75 fps, mean frame 13.34 ms,
   p95 13.6 ms, max 14.4 ms over 300 frames, so no dropped frames. The browser locks to the display's 75 Hz refresh.
   Physics holds 120 Hz. P pauses (physics 0 Hz, render continues) and resumes cleanly. No console errors.
-- Tests: 142 passing (engine response, pitch-attitude check, auto-rudder and the joystick profile added since; Stage 4 added aero, powerplant and Air-Bike performance/circuit suites; Stage 3 added rigid body, atmosphere, wind, gear and input suites). Highlights: free fall matches ½gt²;
+- Tests: 163 passing (Stage 5 added Decathlon performance, aerobatics, propeller-effects suites; engine response, pitch-attitude check, auto-rudder and the joystick profile added since; Stage 4 added aero, powerplant and Air-Bike performance/circuit suites; Stage 3 added rigid body, atmosphere, wind, gear and input suites). Highlights: free fall matches ½gt²;
   a torque-free tumble (with the intermediate-axis flip) conserves energy to 1e-6; an undamped strut bounce returns to its
   release height within 1%; all three aircraft settle at rest on their wheels (loads sum to weight, struts compress by load/k,
   taildraggers 8–13° nose-up); braking stops in v²/(2μg) on gravel and grass; rolling coast distance follows the rolling
@@ -140,6 +167,11 @@
   fuel 151 L is usable (163 L total); gyro empty 113.4 kg (250 lb), max 249.5 kg (550 lb).
 
 ## Known issues / open questions
+- Decathlon spin is a little fast and steep compared with the real aircraft (speed builds to ~60 kt). Revisit in Stage 8.
+- Decathlon hands-off take-off (stick neutral) lifts off late (~85 kt): neutral stick trims near 90 kt. There is no
+  pitch trim control yet; consider adding trim in Stage 7/9.
+- Stall turns end with a brief backward slide of about 3 m/s; acceptable, but technique-sensitive.
+- The Air-Bike pitch-attitude test is flown at 1,000 ft: higher up the engine loses power (Gagg–Ferrar lapse), as it should.
 - Air-Bike landing roll is longer than the 61 m target (about 112 m on grass, 165 m on gravel). Accepted: see Decisions.
 - Hands-off the Air-Bike shows a lightly damped phugoid and a slow left turn from propeller torque. This is realistic;
   a pilot holds attitude and a touch of right stick.
@@ -161,5 +193,5 @@
 - Clouds are not fogged and stop at the layer edge (11 km out), so at high altitude the edge of the layer can be seen.
 
 ## Next step
-Confirm by hand: take off, fly a circuit and land on both runways (keys 7/8 to spawn). Then Stage 5: Super Decathlon
-(reuse `FixedWingAircraft`; add the constant-speed prop, P-factor, gyroscopic precession, spins and G limits).
+Confirm by hand in the Decathlon (Tab): loop, aileron roll, stall turn and spin recovery. Then Stage 6: Bensen B-8M gyro
+(rotor autorotation, prerotator, tilting rotor head, thrust-line offset, low-g/pushover warning, tricycle ground handling).

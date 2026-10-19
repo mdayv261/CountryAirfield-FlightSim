@@ -20,3 +20,5 @@ export const lToM3 = (l: number): number => l * M3_PER_L;
 export const m3ToL = (m3: number): number => m3 / M3_PER_L;
 export const degToRad = (deg: number): number => (deg * Math.PI) / 180;
 export const radToDeg = (rad: number): number => (rad * 180) / Math.PI;
+export const PA_PER_INHG = 3386.389;
+export const paToInHg = (pa: number): number => pa / PA_PER_INHG;

@@ -8,7 +8,7 @@ import { PhysicsWorld } from '../src/physics/PhysicsWorld';
 
 const data = AIRCRAFT.airbike103;
 const settle = (pp: Powerplant, throttle: number, airspeed: number, seconds = 8) => {
-  for (let i = 0; i < seconds / PHYSICS_DT; i++) pp.step(PHYSICS_DT, throttle, airspeed, 1.225);
+  for (let i = 0; i < seconds / PHYSICS_DT; i++) pp.step(PHYSICS_DT, { throttle, airspeed, density: 1.225 });
   return pp.out;
 };
 
@@ -48,7 +48,7 @@ describe('Hirth F-33 and propeller', () => {
     const time = (from: number, to: number, throttle: number) => {
       let t = 0;
       while (Math.abs(pp.rpm - from) < 0.9 * Math.abs(to - from) && t < 30) {
-        pp.step(PHYSICS_DT, throttle, 0, 1.225);
+        pp.step(PHYSICS_DT, { throttle, airspeed: 0, density: 1.225 });
         t += PHYSICS_DT;
       }
       return t;

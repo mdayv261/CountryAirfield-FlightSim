@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { ColouredMeshBuilder } from '../../world/meshBuilder';
 import type { FixedWingAircraft } from '../../physics/FixedWingAircraft';
 import { AIRCRAFT } from '..';
+import { AircraftModel, hingedX, hingedY, slab, tube, v } from './AircraftModel';
 
 // Procedural low-poly Air-Bike 103. Built in body axes (x right, y up, z aft, origin at the
 // CG) so it lines up with the physics: gear contact points, propeller hub and wing all sit
@@ -25,48 +26,16 @@ const C = {
 };
 const WING = { y: 0.85, zLE: -0.38, thickness: 0.12, aileronChord: 0.3, aileronStart: 2.0 };
 const TAIL = { z: 3.25, y: 0.22, stabSpan: 2.4, stabChord: 0.45, elevChord: 0.3, finHeight: 0.85, finChord: 0.45, rudderChord: 0.35 };
-const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 /** Wing rigging incidence, rad (leading edge up from the fuselage axis). */
 const INCIDENCE = ((data.aero!.wingIncidence_deg ?? 0) * Math.PI) / 180;
 
-/** A round tube from a to b (low-poly cylinder). */
-function tube(b: ColouredMeshBuilder, from: THREE.Vector3, to: THREE.Vector3, r: number, colour: number): void {
-  const dir = new THREE.Vector3().subVectors(to, from);
-  const len = dir.length();
-  const g = new THREE.CylinderGeometry(r, r, len, 6);
-  const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
-  const m = new THREE.Matrix4().compose(new THREE.Vector3().addVectors(from, to).multiplyScalar(0.5), q, new THREE.Vector3(1, 1, 1));
-  b.add(g, colour, m);
-}
+export class AirBikeModel extends AircraftModel {
+  /** Pilot's eye: just above the seat, behind the stick. */
+  readonly eye = v(0, 0.38, -0.2);
+  readonly chase = { back: 9, up: 2.6 };
 
-/** A box between two corners, centre and size from them. */
-function slab(b: ColouredMeshBuilder, cx: number, cy: number, cz: number, sx: number, sy: number, sz: number, colour: number) {
-  b.box(cx, cy, cz, sx, sy, sz, colour);
-}
-
-/** A control surface that hinges along x at its leading edge (elevator, ailerons). */
-function hingedX(width: number, chord: number, thickness: number, colour: number): THREE.Group {
-  const pivot = new THREE.Group();
-  const m = new THREE.Mesh(new THREE.BoxGeometry(width, thickness, chord), new THREE.MeshLambertMaterial({ color: colour }));
-  m.position.z = chord / 2; // trailing edge aft of the hinge
-  m.castShadow = true;
-  pivot.add(m);
-  return pivot;
-}
-
-export class AirBikeModel {
-  readonly object = new THREE.Group();
-  private readonly elevator: THREE.Group;
-  private readonly rudder: THREE.Group;
-  private readonly aileronL: THREE.Group;
-  private readonly aileronR: THREE.Group;
-  private readonly prop = new THREE.Group();
-  private readonly disc: THREE.Mesh;
-  private readonly blades: THREE.Mesh;
-  private readonly q = new THREE.Quaternion();
-  private propAngle = 0;
-
-  constructor(private readonly aircraft: FixedWingAircraft) {
+  constructor(aircraft: FixedWingAircraft) {
+    super(aircraft);
     this.object.name = 'airbike103';
     const b = new ColouredMeshBuilder();
     const wingMid = WING.zLE + CHORD / 2;
@@ -137,19 +106,12 @@ export class AirBikeModel {
     slab(b, 0, TAIL.y + TAIL.finHeight / 2, TAIL.z + TAIL.finChord / 2, 0.04, TAIL.finHeight, TAIL.finChord, C.fabric);
     slab(b, 0, TAIL.y + TAIL.finHeight * 0.8, TAIL.z + TAIL.finChord / 2, 0.045, 0.15, TAIL.finChord, C.fabricTrim);
 
-    const body = new THREE.Mesh(b.build(), new THREE.MeshLambertMaterial({ vertexColors: true }));
-    body.castShadow = true;
-    body.receiveShadow = true;
-    this.object.add(body);
+    this.addBody(b);
 
     // Moving surfaces.
     this.elevator = hingedX(TAIL.stabSpan, TAIL.elevChord, 0.035, C.fabric);
     this.elevator.position.set(0, TAIL.y, TAIL.z + TAIL.stabChord);
-    this.rudder = new THREE.Group();
-    const rud = new THREE.Mesh(new THREE.BoxGeometry(0.035, TAIL.finHeight + 0.1, TAIL.rudderChord), new THREE.MeshLambertMaterial({ color: C.fabricTrim }));
-    rud.position.set(0, (TAIL.finHeight + 0.1) / 2, TAIL.rudderChord / 2);
-    rud.castShadow = true;
-    this.rudder.add(rud);
+    this.rudder = hingedY(TAIL.finHeight + 0.1, TAIL.rudderChord, 0.035, C.fabricTrim);
     this.rudder.position.set(0, TAIL.y - 0.1, TAIL.z + TAIL.finChord);
     const aileronSpan = SPAN / 2 - WING.aileronStart;
     this.aileronL = hingedX(aileronSpan, WING.aileronChord, WING.thickness * 0.6, C.fabric);
@@ -160,44 +122,8 @@ export class AirBikeModel {
     this.object.add(this.elevator, this.rudder, this.aileronL, this.aileronR);
 
     // Propeller: two wooden blades, plus a faint disc that shows when it is spinning fast.
-    const [px, py, pz] = data.propeller!.position_m;
-    const D = data.propulsion.propDiameter_m!;
-    this.blades = new THREE.Mesh(new THREE.BoxGeometry(D, 0.12, 0.03), new THREE.MeshLambertMaterial({ color: C.prop }));
-    this.blades.castShadow = true;
-    this.disc = new THREE.Mesh(
-      new THREE.CircleGeometry(D / 2, 24),
-      new THREE.MeshBasicMaterial({ color: 0x6b5030, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }),
-    );
-    this.prop.add(this.blades, this.disc);
-    this.prop.position.set(px, py, pz - 0.02);
-    this.object.add(this.prop);
-  }
-
-  /** Pose between the last two physics states and animate controls and propeller. */
-  update(alpha: number, frameDt: number): void {
-    const body = this.aircraft.body;
-    this.object.position.lerpVectors(body.prevPosition, body.position, alpha);
-    this.object.quaternion.copy(this.q.slerpQuaternions(body.prevOrientation, body.orientation, alpha));
-
-    const a = data.aero!;
-    const p = this.aircraft.pilot;
-    const deg = Math.PI / 180;
-    // Surfaces trail aft (+z) of their hinges. A negative rotation about x lifts the trailing
-    // edge; a positive rotation about y swings it to the right.
-    this.elevator.rotation.x = -p.elevator * a.elevatorMax_deg * deg; // stick back: trailing edge up
-    this.rudder.rotation.y = this.aircraft.rudderApplied * a.rudderMax_deg * deg; // right pedal: trailing edge right
-    this.aileronR.rotation.x = INCIDENCE - p.aileron * a.aileronMax_deg * deg; // stick right: right aileron up
-    this.aileronL.rotation.x = INCIDENCE + p.aileron * a.aileronMax_deg * deg; // ... and left aileron down
-
-    // +z points back at the pilot, so clockwise as the pilot sees it is a negative angle about z.
-    const pp = this.aircraft.powerplant.out;
-    const sense = data.propeller!.rotation === 'clockwise' ? -1 : 1;
-    this.propAngle = (this.propAngle + sense * (pp.propRpm / 60) * 2 * Math.PI * frameDt) % (2 * Math.PI);
-    this.blades.rotation.z = this.propAngle;
-    // From ~2 rev/s the blades blur (and at display frame rates would only strobe):
-    // fade them out and the disc in, fully by ~6 rev/s.
-    const blur = THREE.MathUtils.clamp((pp.propRpm - 120) / 240, 0, 1);
-    (this.disc.material as THREE.MeshBasicMaterial).opacity = 0.25 * blur;
-    this.blades.visible = blur < 0.95;
+    const blades = new THREE.Mesh(new THREE.BoxGeometry(data.propulsion.propDiameter_m!, 0.12, 0.03), new THREE.MeshLambertMaterial({ color: C.prop }));
+    blades.castShadow = true;
+    this.addPropeller(blades, 0x6b5030);
   }
 }
