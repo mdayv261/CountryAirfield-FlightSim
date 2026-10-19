@@ -38,7 +38,7 @@
     Layout (user, 2026-10-20): flight instruments across the top, the slip ball under the ASI, the heading gauge to its
     left and engine gauges to its right. Air-Bike and gyro: ALT, ASI (centre), VSI on top, compass. Decathlon: G-meter,
     ALT, AI (centre), ASI, VSI on top; DG in place of the wet compass; RPM, MAP, fuel and CHT in a 2x2 block; panel 0.50 m
-    wide. (Air-Bike RPM (ASI size) and fuel, with EGT left of the compass and CHT above it, pod 0.31 m wide; gyro RPM, rotor rpm LCD readout, fuel, EGT, CHT; Decathlon as above). The gyro's rotor tacho is a digital LCD (digits turn red outside 200–400 rpm). Open-cockpit pods stand on a post.
+    wide. (Air-Bike RPM (ASI size) and fuel, with EGT left of the compass and CHT above it, pod 0.31 m wide; gyro: ALT, ASI, VSI, RPM, rotor rpm LCD across the top, fuel, EGT, CHT right of the slip ball, pod 0.48 m wide; Decathlon as above). The gyro's rotor tacho is a digital LCD (digits turn red outside 200–400 rpm). Open-cockpit pods stand on a post.
   - Engine temperatures (`src/physics/engineTemps.ts`): CHT settles where combustion heat (∝ charge flow, manifold
     pressure x rpm) balances fin cooling (∝ cooling-air speed^0.5, airspeed plus part of the slipstream), with a
     1–2 min time constant; EGT follows power in seconds. About 200–210 °C after a full-power climb, 65–80 °C after a

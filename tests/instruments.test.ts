@@ -158,8 +158,14 @@ describe('gauges agree with the HUD', () => {
       expect(at(heading)[1]).toBeLessThan(top);
       // Air-Bike (user, 2026-10-20): EGT left of the compass with CHT above it, top row.
       const leftColumn = ac.id === 'airbike103' ? ['egt', 'cht'] : [];
+      // Gyro (user, 2026-10-20): engine tacho then rotor LCD on the top row, right of the VSI.
+      const topRight = ac.id === 'bensenB8M' ? ['tacho', 'rotorTacho'] : [];
+      for (const k of topRight) {
+        expect(at(k)[1], `${ac.id} ${k}`).toBe(top);
+        expect(at(k)[0], `${ac.id} ${k}`).toBeGreaterThan(at('vsi')[0]);
+      }
       for (const g of gs)
-        if (![...flight, ...leftColumn, 'slip', heading].includes(g.kind)) {
+        if (![...flight, ...leftColumn, ...topRight, 'slip', heading].includes(g.kind)) {
           expect(g.at_m[0], `${ac.id} ${g.kind}`).toBeGreaterThan(slip[0]);
           expect(g.at_m[1], `${ac.id} ${g.kind}`).toBeLessThan(top);
         }
@@ -173,7 +179,13 @@ describe('gauges agree with the HUD', () => {
     expect(bike('cht').at_m[0]).toBe(bike('egt').at_m[0]);
     expect(bike('cht').at_m[1]).toBe(bike('asi').at_m[1]);
     expect(bike('tacho').diameter_m).toBe(bike('asi').diameter_m);
-    expect(AIRCRAFT.bensenB8M.panel!.gauges.find((g) => g.kind === 'rotorTacho')!.style).toBe('lcd');
+    const gyro = (k: string) => AIRCRAFT.bensenB8M.panel!.gauges.find((g) => g.kind === k)!;
+    expect(gyro('rotorTacho').at_m[0]).toBeGreaterThan(gyro('tacho').at_m[0]);
+    expect(gyro('fuel').at_m[0]).toBeGreaterThan(gyro('slip').at_m[0]);
+    expect(gyro('egt').at_m[0]).toBeGreaterThan(gyro('fuel').at_m[0]);
+    expect(gyro('cht').at_m[0]).toBeGreaterThan(gyro('egt').at_m[0]);
+    expect(AIRCRAFT.bensenB8M.panel!.size_m[0]).toBeLessThan(0.6);
+    expect(gyro('rotorTacho').style).toBe('lcd');
     expect(lcdText(362.6)).toBe('363');
   });
 
