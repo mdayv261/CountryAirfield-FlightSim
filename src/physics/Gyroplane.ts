@@ -10,6 +10,9 @@ const LOW_G = 0.5;
 const PUSHOVER_THROTTLE = 0.4;
 const PUSHOVER_G = 0.3;
 
+/** Lateral stick deflection beyond which the pilot is flying it and stick-free stability has faded out. */
+const STICK_FREE_BAND = 0.15;
+
 /** The prerotator clutch starts to bite this far above the engine's stall rpm (fraction of stall rpm). */
 const PREROTATOR_BITE_FRACTION = 1.15;
 
@@ -39,6 +42,8 @@ export class Gyroplane extends PoweredAircraft {
   private readonly force = new THREE.Vector3();
   private readonly moment = new THREE.Vector3();
   private readonly finArm: number;
+  private readonly tmpRight = new THREE.Vector3();
+  private readonly tmpUp = new THREE.Vector3();
 
   constructor(data: AircraftData, fuelFraction = 1) {
     super(data, fuelFraction);
@@ -58,7 +63,7 @@ export class Gyroplane extends PoweredAircraft {
       omegaBody: b.angularVelocity,
       density: c.density,
       stickPitch: p.elevator,
-      stickRoll: p.aileron,
+      stickRoll: p.aileron + this.stickFreeRoll(),
       prerotator: p.prerotator * this.prerotatorEngagement(),
       engineRunning: this.powerplant.running,
       hubHeight: c.heightAgl + this.data.rotor!.hubPosition_m[1],
@@ -92,6 +97,32 @@ export class Gyroplane extends PoweredAircraft {
     const lo = PREROTATOR_BITE_FRACTION * this.data.engine!.stallRpm;
     const hi = pre.fullTorqueEngineRpm ?? 0.6 * this.data.propulsion.ratedRpm;
     return Math.max(0, Math.min(1, (this.powerplant.rpm - lo) / (hi - lo)));
+  }
+
+  /**
+   * Stick-free roll stability, in stick units. A stock B-8M is spirally neutral to slightly
+   * unstable: let go and a bank slowly develops, because the big fin keeps sideslip (and so the
+   * rotor's natural roll-restoring tendency) tiny. Modern gyros are trimmed and rigged to fly
+   * hands-off; we model the result: with the stick released sideways, the head floats so as to
+   * keep the rotor disc level (and resists roll rate, for damping). The airframe hangs beneath
+   * with a slight list that balances the propeller's torque, and the gyro flies straight. As the
+   * pilot moves the stick it fades out, so deliberate inputs feel unchanged. Not on the ground.
+   */
+  private stickFreeRoll(): number {
+    const r = this.data.rotor!;
+    const gain = r.stickFreeRollGain ?? 0;
+    if (gain === 0 || this.gear.states.some((s) => s.inContact)) return 0;
+    const free = Math.max(0, 1 - Math.abs(this.pilot.aileron) / STICK_FREE_BAND);
+    if (free === 0) return 0;
+    // Bank of the rotor disc: its axis's lean towards the body's right, in the horizontal plane.
+    const disc = this.body.toWorld(this.tmpUp.copy(this.rotor.discAxis));
+    const right = this.body.toWorld(this.tmpRight.set(1, 0, 0));
+    right.y = 0;
+    right.normalize();
+    const discBank = Math.atan2(disc.dot(right), disc.y);
+    const p = -this.body.angularVelocity.z;
+    const tilt = -gain * discBank - (r.stickFreeRollDamping_s ?? 0) * p; // rad of head roll
+    return (free * tilt) / ((r.headRollRange_deg * Math.PI) / 180);
   }
 
   /** The prerotator's drive takes its power from the engine. */

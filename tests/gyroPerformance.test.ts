@@ -64,6 +64,30 @@ describe('Bensen B-8M ground handling and take-off', () => {
     expect(power.rpm).toBeGreaterThan(250);
   }, LONG);
 
+  it('the brakes hold it still while prerotating with power on, on gravel and on grass', () => {
+    const run = (x: number, throttle: number) => {
+      const { world, ac } = makeWorld(B);
+      const gy = ac as Gyroplane;
+      gy.resetOnGround(x, 280, 0, 0);
+      const z0 = gy.body.position.z;
+      fly(world, 20, () => {
+        gy.pilot.brakeLeft = gy.pilot.brakeRight = 1;
+        gy.pilot.prerotator = 1;
+        gy.pilot.throttle = throttle;
+      });
+      return { moved: Math.abs(gy.body.position.z - z0), rpm: gy.powerplant.out.engineRpm };
+    };
+    // Gravel grips better: it holds at 65 % throttle (~2,800 engine rpm with the prerotator
+    // loading the engine). Grass holds at the ~2,500 rpm a pilot uses to prerotate.
+    const gravel = run(RUNWAYS.gravel.cx, 0.65);
+    const grass = run(RUNWAYS.grass.cx, 0.55);
+    console.info(`braked prerotation: gravel ${gravel.moved.toFixed(2)} m at ${gravel.rpm.toFixed(0)} rpm, grass ${grass.moved.toFixed(2)} m at ${grass.rpm.toFixed(0)} rpm`);
+    expect(gravel.rpm).toBeGreaterThan(2750);
+    expect(grass.rpm).toBeGreaterThan(2450);
+    expect(gravel.moved).toBeLessThan(0.5);
+    expect(grass.moved).toBeLessThan(0.5);
+  }, LONG);
+
   it(`takes off in about ${T.takeoffM} m after prerotating`, () => {
     const { world, ac } = makeWorld(B);
     const gy = ac as Gyroplane;
@@ -122,6 +146,43 @@ describe('Bensen B-8M performance', () => {
     within10(mpsToKt(gy.state.ias), T.cruiseKt);
     expect(gy.rotor.rpm).toBeGreaterThan(B.limits.rotorRpmMin!);
     expect(gy.rotor.rpm).toBeLessThan(B.limits.rotorRpmMax!);
+  }, LONG);
+
+  it('flies itself hands-off: level at cruise power, climbing with more, descending with less, wings level', () => {
+    const run = (throttle: number) => {
+      const { world, gy } = gyroInFlight(800, 53);
+      gy.pilot.throttle = throttle;
+      let maxBank = 0;
+      fly(world, 120, (t) => {
+        if (t > 20) maxBank = Math.max(maxBank, Math.abs(attitude(gy).bank));
+      });
+      const y0 = gy.body.position.y;
+      const psi0 = attitude(gy).heading;
+      fly(world, 30, () => {
+        maxBank = Math.max(maxBank, Math.abs(attitude(gy).bank));
+      });
+      const deg = 180 / Math.PI;
+      return {
+        fpm: mpsToFpm((gy.body.position.y - y0) / 30),
+        bank: maxBank * deg,
+        turn: Math.abs(attitude(gy).heading - psi0) * deg,
+        kt: mpsToKt(gy.state.ias),
+      };
+    };
+    const cruise = run(0.55); // 45 % power, the agreed cruise setting
+    const full = run(1);
+    const idle = run(0);
+    for (const [name, r] of Object.entries({ cruise, full, idle })) {
+      console.info(`hands-off ${name}: ${r.fpm.toFixed(0)} fpm, ${r.kt.toFixed(0)} kt, max bank ${r.bank.toFixed(1)}°, turned ${r.turn.toFixed(1)}° in 30 s`);
+    }
+    expect(Math.abs(cruise.fpm)).toBeLessThan(100);
+    within10(cruise.kt, T.cruiseKt);
+    expect(cruise.bank).toBeLessThan(3);
+    expect(cruise.turn).toBeLessThan(5);
+    expect(full.fpm).toBeGreaterThan(400);
+    expect(idle.fpm).toBeLessThan(-500);
+    expect(full.bank).toBeLessThan(5);
+    expect(idle.bank).toBeLessThan(3);
   }, LONG);
 
   it(`reaches ${T.maxKt.toFixed(0)} kt flat out in level flight`, () => {

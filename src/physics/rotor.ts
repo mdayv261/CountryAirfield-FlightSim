@@ -92,6 +92,7 @@ export class Rotor {
   private readonly theta: number;
   private readonly hub: THREE.Vector3;
   private readonly neutralPitch: number;
+  private readonly neutralRoll: number;
   private readonly pitchRange: number;
   private readonly pitchBackRange: number;
   private readonly rollRange: number;
@@ -129,6 +130,7 @@ export class Rotor {
     this.theta = degToRad(data.collectivePitch_deg);
     this.hub = new THREE.Vector3(...data.hubPosition_m);
     this.neutralPitch = degToRad(data.headNeutralPitch_deg);
+    this.neutralRoll = degToRad(data.headNeutralRoll_deg ?? 0);
     this.pitchRange = degToRad(data.headPitchRange_deg);
     this.pitchBackRange = degToRad(data.headPitchBackRange_deg ?? data.headPitchRange_deg);
     this.rollRange = degToRad(data.headRollRange_deg);
@@ -173,7 +175,7 @@ export class Rotor {
     const q = inp.omegaBody.x; // pitch rate, nose up positive
     const stick = clamp1(inp.stickPitch);
     let tiltBack = this.neutralPitch + (stick > 0 ? this.pitchBackRange : this.pitchRange) * stick - q * d.flapLag_s;
-    let tiltRight = this.rollRange * clamp1(inp.stickRoll) - p * d.flapLag_s;
+    let tiltRight = this.neutralRoll + this.rollRange * clamp1(inp.stickRoll) - p * d.flapLag_s;
 
     // Air velocity at the hub (aircraft motion through the air plus rotation), and the airflow past it.
     this.vHub.crossVectors(inp.omegaBody, this.hub).add(inp.airVelocityBody);

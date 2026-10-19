@@ -265,11 +265,23 @@ export interface RotorData {
   inertia_kgm2: number;
   /** Head (spindle) tilted back from the mast with the stick neutral, degrees. */
   headNeutralPitch_deg: number;
+  /**
+   * Head tilted right with the stick neutral, degrees: the rigging that cancels propeller
+   * torque at cruise power, so the gyro flies wings-level hands off.
+   */
+  headNeutralRoll_deg?: number;
   /** Head tilt from full stick: forward, and left and right (±), degrees. */
   headPitchRange_deg: number;
   headRollRange_deg: number;
   /** Head tilt from full back stick, degrees (more than forward, to load the rotor on take-off). */
   headPitchBackRange_deg?: number;
+  /**
+   * Stick-free roll stability (hands-off trim, as on modern gyros): with the stick released
+   * sideways, the head leans against any bank by this many degrees per degree of bank, plus
+   * stickFreeRollDamping_s seconds of roll rate. Fades out as the pilot moves the stick.
+   */
+  stickFreeRollGain?: number;
+  stickFreeRollDamping_s?: number;
   /** Time the disc takes to follow the shaft when the airframe rotates (gives damping), s. */
   flapLag_s: number;
   /** Largest blowback (disc tilting back with speed), degrees. */
@@ -304,6 +316,8 @@ export interface SurfaceData {
   rudderMax_deg?: number;
   /** Share of the propeller slipstream's extra dynamic pressure the surface sits in. */
   slipstream?: number;
+  /** Fixed rigging angle, degrees: for a fin, offset to cancel propeller yaw (positive = as right rudder). */
+  rigging_deg?: number;
 }
 
 /** Airframe aerodynamics for aircraft without a wing: body drag and tail surfaces. */
@@ -480,9 +494,12 @@ export function validateAircraftData(raw: unknown): AircraftData {
     num(r, 'rotor.', 'maxCTOverSolidity', 0.05, 0.4);
     num(r, 'rotor.', 'inertia_kgm2', 1, 1000);
     num(r, 'rotor.', 'headNeutralPitch_deg', -10, 20);
+    num(r, 'rotor.', 'headNeutralRoll_deg', -10, 10, false);
     num(r, 'rotor.', 'headPitchRange_deg', 1, 20);
     num(r, 'rotor.', 'headRollRange_deg', 1, 20);
     num(r, 'rotor.', 'headPitchBackRange_deg', 1, 30, false);
+    num(r, 'rotor.', 'stickFreeRollGain', 0, 2, false);
+    num(r, 'rotor.', 'stickFreeRollDamping_s', 0, 1, false);
     num(r, 'rotor.', 'flapLag_s', 0, 1);
     num(r, 'rotor.', 'maxBlowback_deg', 0, 20);
     num(r, 'rotor.', 'bearingFriction_Nm', 0, 50);
@@ -508,6 +525,7 @@ export function validateAircraftData(raw: unknown): AircraftData {
         num(s, path, 'rudderPower', 0, 7, false);
         num(s, path, 'rudderMax_deg', 0, 45, false);
         num(s, path, 'slipstream', 0, 1, false);
+        num(s, path, 'rigging_deg', -10, 10, false);
       });
   }
   if (raw.propeller !== undefined) {

@@ -47,9 +47,9 @@ describe('gyroplane rotor', () => {
   it('settles at a steady rotor speed in steady flight (the autorotation balance)', () => {
     const r = newRotor();
     r.omega = 20; // well below flight rpm
-    // Level flight at 50 kt, fuselage 4° nose-down: with the head's 9° neutral tilt the disc meets
-    // the air at about 5°, as in cruise.
-    const a = (-4 * Math.PI) / 180;
+    // Level flight at 50 kt, keel 2.5° nose-down to the airflow: with the head's 0.95° neutral
+    // back tilt (plus blowback) the disc meets the air at a few degrees, as in cruise.
+    const a = (-2.5 * Math.PI) / 180;
     const v = new THREE.Vector3(0, -ktToMps(50) * Math.sin(a), -ktToMps(50) * Math.cos(a));
     for (let i = 0; i < 60 / PHYSICS_DT; i++) r.step(PHYSICS_DT, input({ airVelocityBody: v }));
     const settled = r.rpm;

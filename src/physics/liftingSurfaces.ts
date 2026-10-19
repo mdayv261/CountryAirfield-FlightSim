@@ -19,13 +19,18 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
  * A rudder on the fin adds lift in proportion to its deflection.
  */
 export class LiftingSurfaces {
-  private readonly surfaces: Array<SurfaceData & { r: THREE.Vector3; rudderMax: number }>;
+  private readonly surfaces: Array<SurfaceData & { r: THREE.Vector3; rudderMax: number; rig: number }>;
   private readonly vLocal = new THREE.Vector3();
   private readonly f = new THREE.Vector3();
   private readonly tmp = new THREE.Vector3();
 
   constructor(readonly data: AirframeAeroData) {
-    this.surfaces = data.surfaces.map((s) => ({ ...s, r: new THREE.Vector3(...s.position_m), rudderMax: degToRad(s.rudderMax_deg ?? 0) }));
+    this.surfaces = data.surfaces.map((s) => ({
+      ...s,
+      r: new THREE.Vector3(...s.position_m),
+      rudderMax: degToRad(s.rudderMax_deg ?? 0),
+      rig: degToRad(s.rigging_deg ?? 0),
+    }));
   }
 
   /** Total fin area (for the slipstream-swirl moment reference). */
@@ -77,7 +82,8 @@ export class LiftingSurfaces {
       }
       const deflection = s.plane === 'yaw' ? clamp(rudder, -1, 1) * s.rudderMax : 0;
       // Right rudder puts the fin's lift to the left (−x), swinging the tail left and the nose right.
-      const CL = clamp(s.liftSlope * Math.sin(angle) + (s.rudderPower ?? 0) * deflection, -s.CLmax, s.CLmax);
+      // A rigging offset acts like a fixed trim deflection of the whole surface.
+      const CL = clamp(s.liftSlope * Math.sin(angle + s.rig) + (s.rudderPower ?? 0) * deflection, -s.CLmax, s.CLmax);
       const CD = s.CD0 + (CL * CL) / (Math.PI * 0.7 * s.aspectRatio);
       this.f.copy(liftDir).multiplyScalar(CL * q * s.area_m2);
       // Drag along the local airflow.

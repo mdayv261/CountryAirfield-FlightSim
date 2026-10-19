@@ -23,7 +23,7 @@
   },
   "gear": {
     "layout": "tricycle",
-    "brakes": false,
+    "brakes": true,
     "legs": [
       {
         "name": "nosewheel",
@@ -33,6 +33,7 @@
         "damper_Ns_per_m": 630,
         "travel_m": 0.06,
         "steerMax_rad": 0.6,
+        "brake": true,
         "tyreRadius_m": 0.12
       },
       {
@@ -42,7 +43,7 @@
         "spring_N_per_m": 30000,
         "damper_Ns_per_m": 1700,
         "travel_m": 0.08,
-        "brake": false,
+        "brake": true,
         "tyreRadius_m": 0.18
       },
       {
@@ -52,7 +53,7 @@
         "spring_N_per_m": 30000,
         "damper_Ns_per_m": 1700,
         "travel_m": 0.08,
-        "brake": false,
+        "brake": true,
         "tyreRadius_m": 0.18
       },
       {
@@ -79,9 +80,12 @@
     "collectivePitch_deg": 5.5,
     "maxCTOverSolidity": 0.18,
     "inertia_kgm2": 60,
-    "headNeutralPitch_deg": 2.5,
+    "headNeutralPitch_deg": 0.95,
+    "headNeutralRoll_deg": 1.6,
     "headPitchRange_deg": 12,
     "headPitchBackRange_deg": 20,
+    "stickFreeRollGain": 1.0,
+    "stickFreeRollDamping_s": 0.2,
     "headRollRange_deg": 7,
     "flapLag_s": 0.04,
     "maxBlowback_deg": 8,
@@ -108,7 +112,8 @@
         "CD0": 0.02,
         "rudderPower": 1.6,
         "rudderMax_deg": 28,
-        "slipstream": 0.6
+        "slipstream": 0.6,
+        "rigging_deg": 0.5
       },
       {
         "name": "tailplane",
@@ -176,6 +181,8 @@
     "Propeller: 52 x 22 in wooden pusher, direct drive, about 150 kgf static thrust, thrust line 0.18 m above the CG (nose-down moment with power: the power-pushover hazard).",
     "Airframe: open frame with pilot, drag area 0.6 m2 (sets the 82 kt top speed); fin and rudder (0.45 m2) in the slipstream; small tailplane (0.15 m2, assumed: the stock B-8M had none; this small one keeps pitch lively, so a sharp pushover really does unload the rotor).",
     "Cruise (decided 2026-10-19): the Bensen 65 mph (56 kt) cruise is level flight at about 45% power (~3,500 rpm); full power gives the 82 kt maximum.",
-    "Engine: McCulloch 4318, 65 hp at 4100 rpm, two-stroke flat four, direct drive (assumed); bsfc 0.5 kg/kWh."
+    "Engine: McCulloch 4318, 65 hp at 4100 rpm, two-stroke flat four, direct drive (assumed); bsfc 0.5 kg/kWh.",
+    "Hands-off trim (user request 2026-10-19): head rigged 0.95 deg back and 1.6 deg right (cancels propeller torque at cruise power), fin offset 0.5 deg (cancels propeller yaw), plus stick-free roll stability that keeps the rotor disc level when the stick is released sideways (modern-gyro behaviour; the stock B-8M was spirally neutral). Hands-off at 45% power it flies straight and level at 53 kt with about a 1 deg left-wing-low list; power changes climb or descend.",
+    "Brakes on all three wheels (user request 2026-10-19; assumed, the stock B-8M had none): main brakes alone (about 60% of the weight) slipped above ~2,800 engine rpm; with the nosewheel braked too the gyro holds still while prerotating at ~2,800 rpm on gravel and ~2,500 rpm on grass."
   ]
 }
