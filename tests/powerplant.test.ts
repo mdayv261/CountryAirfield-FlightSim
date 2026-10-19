@@ -40,6 +40,29 @@ describe('Hirth F-33 and propeller', () => {
     expect(settle(pp, 0.5, 0, 4).engineRpm).toBeGreaterThan(idle + 1000);
   });
 
+  it('spools idle to full in about 1.1 s and back in about 1.3 s (static, to 90 % of the change)', () => {
+    const pp = new Powerplant(data);
+    pp.start();
+    const idle = settle(pp, 0, 0, 20).engineRpm;
+    const full = settle(pp, 1, 0, 20).engineRpm;
+    const time = (from: number, to: number, throttle: number) => {
+      let t = 0;
+      while (Math.abs(pp.rpm - from) < 0.9 * Math.abs(to - from) && t < 30) {
+        pp.step(PHYSICS_DT, throttle, 0, 1.225);
+        t += PHYSICS_DT;
+      }
+      return t;
+    };
+    settle(pp, 0, 0, 20);
+    const up = time(idle, full, 1);
+    settle(pp, 1, 0, 20);
+    const down = time(full, idle, 0);
+    expect(up).toBeGreaterThan(0.9);
+    expect(up).toBeLessThan(1.35);
+    expect(down).toBeGreaterThan(1.0);
+    expect(down).toBeLessThan(1.5);
+  });
+
   it('the propeller unloads with airspeed and windmills (negative thrust) in a fast glide', () => {
     const pp = new Powerplant(data);
     pp.start();

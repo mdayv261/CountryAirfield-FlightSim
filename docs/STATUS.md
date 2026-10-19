@@ -49,6 +49,8 @@
     incidence (`aero.wingIncidence_deg`; tables are against the wing's angle, so flight performance is unchanged)
     and the tailwheel lowered so the wing's ground angle is as before (fuselage ~11° nose-up at rest).
     With the stick held neutral the attitudes differ (about −3°, +7°, +10°), because neutral stick holds ~40 kt.
+  - Engine response (halved at the user's request): idle → full rpm in 1.1 s static / 0.65 s at 45 kt,
+    full → idle in 1.3 s / 0.8 s (to 90% of the change). Crank inertia 0.006 and prop 0.125 kg m², carburettor lag 0.075 s.
   - Auto-coordinated rudder (U, or the controls screen; saved; off by default; HUD shows AUTO-RUDDER):
     a PI controller on sideslip plus a washed-out yaw damper (it damps sudden yaw but not a steady turn), added to
     the pilot's rudder in flight only (inactive on the ground and fading in from 15 to 25 kt). In an aileron-only
@@ -57,7 +59,7 @@
     (arrows stick, Z/C rudder, +/− throttle). Neutral stick trims about 40 kt at full power. Default wind: light northerly.
   - Automated flight tests (test pilot autopilot in `tests/helpers`), mass 216 kg, calm ISA:
     stall 24.4 kt (target 24, +1.7%); cruise at 75% power 49.2 kt (47, +4.7%); best climb 498 fpm (475, +4.8%);
-    take-off roll 76.0 m on grass and 72.8 m on gravel (76, 0% and −4.2%, three-point technique);
+    take-off roll 74.3 m on grass and 71.0 m on gravel (76, −2% and −7%, three-point technique);
     full-power level speed 54.7 kt (Part 103 limit 55). Full left-hand 500 ft circuits with take-off, 5° approach,
     flare and roll-out pass on gravel 36, grass 36, grass 18 and gravel 18 (touchdown 26 kt, 1.2 m/s sink, no strikes,
     stops on the runway).
@@ -100,7 +102,7 @@
 - Measured in Chrome on the Mac mini M4 (2560x1440 display at 75 Hz): 75 fps, mean frame 13.34 ms,
   p95 13.6 ms, max 14.4 ms over 300 frames, so no dropped frames. The browser locks to the display's 75 Hz refresh.
   Physics holds 120 Hz. P pauses (physics 0 Hz, render continues) and resumes cleanly. No console errors.
-- Tests: 141 passing (pitch-attitude check, auto-rudder and the joystick profile added since; Stage 4 added aero, powerplant and Air-Bike performance/circuit suites; Stage 3 added rigid body, atmosphere, wind, gear and input suites). Highlights: free fall matches ½gt²;
+- Tests: 142 passing (engine response, pitch-attitude check, auto-rudder and the joystick profile added since; Stage 4 added aero, powerplant and Air-Bike performance/circuit suites; Stage 3 added rigid body, atmosphere, wind, gear and input suites). Highlights: free fall matches ½gt²;
   a torque-free tumble (with the intermediate-axis flip) conserves energy to 1e-6; an undamped strut bounce returns to its
   release height within 1%; all three aircraft settle at rest on their wheels (loads sum to weight, struts compress by load/k,
   taildraggers 8–13° nose-up); braking stops in v²/(2μg) on gravel and grass; rolling coast distance follows the rolling
