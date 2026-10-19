@@ -45,6 +45,25 @@ describe('Bensen B-8M ground handling and take-off', () => {
     expect(gy.powerplant.running).toBe(true);
   }, LONG);
 
+  it('prerotating at idle cannot stall the engine; adding power spins the rotor up faster', () => {
+    const run = (throttle: number) => {
+      const { world, ac } = makeWorld(B);
+      const gy = ac as Gyroplane;
+      gy.resetOnGround(RUNWAYS.gravel.cx, 280, 0, 0);
+      fly(world, 20, () => {
+        gy.pilot.prerotator = 1;
+        gy.pilot.throttle = throttle;
+      });
+      return { rpm: gy.rotor.rpm, running: gy.powerplant.running };
+    };
+    const idle = run(0);
+    const power = run(0.4);
+    expect(idle.running).toBe(true);
+    expect(idle.rpm).toBeGreaterThan(20); // turning, slowly
+    expect(power.running).toBe(true);
+    expect(power.rpm).toBeGreaterThan(250);
+  }, LONG);
+
   it(`takes off in about ${T.takeoffM} m after prerotating`, () => {
     const { world, ac } = makeWorld(B);
     const gy = ac as Gyroplane;

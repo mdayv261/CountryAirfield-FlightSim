@@ -89,7 +89,8 @@
     "rotation": "anticlockwise",
     "prerotator": {
       "torque_Nm": 140,
-      "maxRpm": 330
+      "maxRpm": 330,
+      "fullTorqueEngineRpm": 2600
     }
   },
   "airframeAero": {
@@ -171,7 +172,7 @@
     "Inertia is the airframe only (pilot, engine, keel); rotor inertia is modelled separately in Stage 6.",
     "Stage 6 flight model (estimates tuned to the CLAUDE.md targets; see docs/STATUS.md):",
     "Rotor: 2-blade teetering, 7 in (0.178 m) chord, solidity 0.037, NACA 8-H-12 type blades (lift slope 5.7/rad, profile drag 0.011), fixed pitch 5.5 deg (sets ~360-370 rpm in cruise), ~60 kg m2. Head tilted back 2.5 deg at neutral stick (trims about 50 kt hands-off), 12 deg forward and 20 deg back (to load the rotor on the take-off roll), +/-7 deg roll.",
-    "Prerotator: clutch from the engine, 140 N m at the rotor, drives up to 330 rpm (near flight rpm, needed for the CLAUDE.md 30 m take-off roll).",
+    "Prerotator: clutch from the engine, 140 N m at the rotor, drives up to 330 rpm (near flight rpm, needed for the CLAUDE.md 30 m take-off roll). The clutch passes full torque from 2,600 engine rpm and less towards idle, so it cannot stall the engine.",
     "Propeller: 52 x 22 in wooden pusher, direct drive, about 150 kgf static thrust, thrust line 0.18 m above the CG (nose-down moment with power: the power-pushover hazard).",
     "Airframe: open frame with pilot, drag area 0.6 m2 (sets the 82 kt top speed); fin and rudder (0.45 m2) in the slipstream; small tailplane (0.15 m2, assumed: the stock B-8M had none; this small one keeps pitch lively, so a sharp pushover really does unload the rotor).",
     "Cruise (decided 2026-10-19): the Bensen 65 mph (56 kt) cruise is level flight at about 45% power (~3,500 rpm); full power gives the 82 kt maximum.",

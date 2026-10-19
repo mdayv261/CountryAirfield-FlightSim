@@ -6,6 +6,8 @@ import type { PoweredAircraft } from '../physics/PoweredAircraft';
 const FIELD_FT = 50;
 /** Stall warning this many degrees below the stalling angle of attack. */
 const STALL_MARGIN_DEG = 3;
+/** Below this rotor rpm, while prerotating at low engine rpm, remind the pilot to add power. */
+const AIRCRAFT_PREROT_HINT_RPM = 300;
 const COLOUR = { normal: '#7dff9a', warning: '#ff6b6b' };
 
 /**
@@ -72,7 +74,11 @@ export class Hud {
     ];
     const gyro = ac instanceof Gyroplane ? ac : null;
     if (gyro) {
-      lines.push(`ROTOR${gyro.rotor.rpm.toFixed(0).padStart(5)} rpm${gyro.rotor.out.prerotatorTorque > 0 ? '  PREROTATING' : ''}`);
+      const prerotating = ac.pilot.prerotator > 0 && pp.running;
+      const lowPower = prerotating && gyro.prerotatorEngagement() < 0.8 && gyro.rotor.rpm < AIRCRAFT_PREROT_HINT_RPM;
+      lines.push(`ROTOR${gyro.rotor.rpm.toFixed(0).padStart(5)} rpm${prerotating ? '  PREROTATING' : ''}`);
+      if (lowPower) lines.push('  add power: ~2600 engine rpm');
+      if (ac.pilot.prerotator > 0 && !pp.running) lines.push('  engine off: press E to start');
     }
     if (cs) {
       lines.push(`MAP  ${paToInHg(pp.out.manifoldPressure).toFixed(1).padStart(5)} inHg`);

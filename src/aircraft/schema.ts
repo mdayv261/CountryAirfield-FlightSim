@@ -278,8 +278,12 @@ export interface RotorData {
   bearingFriction_Nm: number;
   /** Direction of rotation seen from above. */
   rotation: 'clockwise' | 'anticlockwise';
-  /** Engine-driven prerotator: torque while engaged, and the rpm it cannot drive beyond. */
-  prerotator: { torque_Nm: number; maxRpm: number };
+  /**
+   * Engine-driven prerotator: full torque, the rotor rpm it cannot drive beyond, and the
+   * engine rpm at which its clutch transmits full torque (it takes less as the engine nears
+   * idle, so it never stalls the engine).
+   */
+  prerotator: { torque_Nm: number; maxRpm: number; fullTorqueEngineRpm?: number };
 }
 
 /** A tail surface treated as a small wing (gyroplanes). */
@@ -486,6 +490,7 @@ export function validateAircraftData(raw: unknown): AircraftData {
     const pre = isObj(r.prerotator) ? r.prerotator : {};
     num(pre, 'rotor.prerotator.', 'torque_Nm', 1, 1000);
     num(pre, 'rotor.prerotator.', 'maxRpm', 10, 500);
+    num(pre, 'rotor.prerotator.', 'fullTorqueEngineRpm', 500, 10_000, false);
   }
   if (raw.airframeAero !== undefined) {
     const f = section('airframeAero');

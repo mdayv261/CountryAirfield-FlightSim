@@ -37,11 +37,15 @@
     open-frame body drag. Prop thrust line 0.18 m above the CG (power pushes the nose down).
   - Stick tilts the rotor head (neutral 2.5° back, 12° forward, 20° back, ±7° roll); pedals = rudder + nosewheel;
     Q (hold) or joystick thumb button = prerotator. Neutral stick trims about 40–50 kt.
+  - Prerotator clutch is progressive: it passes torque in proportion to engine rpm above the stall speed (full torque
+    from 2,600 rpm), so it can never stall the engine. At idle the rotor turns slowly and the HUD says
+    "add power: ~2600 engine rpm"; at about 65% throttle it reaches 330 rpm in about 20 s. (Fixed 2026-10-19: holding Q
+    at idle used to stall the engine within seconds.)
   - Warnings: LOW G (< 0.5 g airborne), PUSHOVER (< 0.3 g with power), LOW ROTOR RPM (< 200), ROTOR OVERSPEED (> 400).
     HUD shows rotor rpm and PREROTATING.
   - Procedural model: keel, mast, open seat and pilot, rudder bar, fuel tank, McCulloch and pusher prop, tricycle
     gear, fin/rudder/tailplane, and a two-blade rotor that tilts with the disc axis and spins at the real rotor speed.
-  - Gyro tests (218 kg, ISA, calm): prerotation to 300 rpm in 21 s; take-off roll 31.0 m, lift-off 25 kt (target 30 m);
+  - Gyro tests (218 kg, ISA, calm): prerotation to 300 rpm in 22 s at 65% throttle; take-off roll 29.4 m, lift-off 24 kt (target 30 m);
     climb 1125 fpm at 45 kt (1100); cruise 55.2 kt at 45% power (56 kt = Bensen 65 mph); max level 79.6 kt (82);
     idle autorotation at 40 kt steady at −835 fpm with rotor 389 rpm (±1.2); sharp pushover to −0.18 g triggers
     LOW G, rotor decays 375 → 351 rpm, with power on the PUSHOVER warning and a harder nose-down pitch; recovers.
@@ -151,7 +155,7 @@
 - Measured in Chrome on the Mac mini M4 (2560x1440 display at 75 Hz): 75 fps, mean frame 13.34 ms,
   p95 13.6 ms, max 14.4 ms over 300 frames, so no dropped frames. The browser locks to the display's 75 Hz refresh.
   Physics holds 120 Hz. P pauses (physics 0 Hz, render continues) and resumes cleanly. No console errors.
-- Tests: 182 passing (Stage 6 added rotor, gyro performance and static-friction tests; Stage 5 added Decathlon performance, aerobatics, propeller-effects suites; engine response, pitch-attitude check, auto-rudder and the joystick profile added since; Stage 4 added aero, powerplant and Air-Bike performance/circuit suites; Stage 3 added rigid body, atmosphere, wind, gear and input suites). Highlights: free fall matches ½gt²;
+- Tests: 183 passing (Stage 6 added rotor, gyro performance and static-friction tests; Stage 5 added Decathlon performance, aerobatics, propeller-effects suites; engine response, pitch-attitude check, auto-rudder and the joystick profile added since; Stage 4 added aero, powerplant and Air-Bike performance/circuit suites; Stage 3 added rigid body, atmosphere, wind, gear and input suites). Highlights: free fall matches ½gt²;
   a torque-free tumble (with the intermediate-axis flip) conserves energy to 1e-6; an undamped strut bounce returns to its
   release height within 1%; all three aircraft settle at rest on their wheels (loads sum to weight, struts compress by load/k,
   taildraggers 8–13° nose-up); braking stops in v²/(2μg) on gravel and grass; rolling coast distance follows the rolling
@@ -222,7 +226,7 @@
 - Clouds are not fogged and stop at the layer edge (11 km out), so at high altitude the edge of the layer can be seen.
 
 ## Next step
-Confirm by hand in the gyro (Tab twice): hold Q (or thumb button) to prerotate to ~330 rpm, full power, back stick,
+Confirm by hand in the gyro (Tab twice): hold Q (or thumb button) with about 2,600 engine rpm (≈65% throttle) to prerotate to ~330 rpm, then full power, back stick,
 lift off, climb, cruise, idle descent, and a gentle pushover to see the LOW G warning. Then Stage 7: cockpits and views
 (per-aircraft panels: ASI, altimeter, VSI, compass, tachos incl. rotor rpm, slip ball, EGT/CHT, fuel; MAP, G-meter;
 HUD option; chase, cockpit and tower views).

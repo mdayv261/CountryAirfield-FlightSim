@@ -10,6 +10,9 @@ const LOW_G = 0.5;
 const PUSHOVER_THROTTLE = 0.4;
 const PUSHOVER_G = 0.3;
 
+/** The prerotator clutch starts to bite this far above the engine's stall rpm (fraction of stall rpm). */
+const PREROTATOR_BITE_FRACTION = 1.15;
+
 /** Gyroplane warnings for the HUD and tests. */
 export interface GyroWarnings {
   /** Load factor below 0.5 g in flight: the rotor is unloading and losing rpm and control. */
@@ -56,7 +59,7 @@ export class Gyroplane extends PoweredAircraft {
       density: c.density,
       stickPitch: p.elevator,
       stickRoll: p.aileron,
-      prerotator: p.prerotator,
+      prerotator: p.prerotator * this.prerotatorEngagement(),
       engineRunning: this.powerplant.running,
       hubHeight: c.heightAgl + this.data.rotor!.hubPosition_m[1],
     });
@@ -74,6 +77,21 @@ export class Gyroplane extends PoweredAircraft {
       alpha: V > 0.3 ? Math.atan2(-v.y, -v.z) : 0,
       beta: V > 0.3 ? Math.asin(Math.max(-1, Math.min(1, v.x / V))) : 0,
     };
+  }
+
+  /**
+   * How much of its torque the prerotator clutch can pass, 0..1, from engine speed. A pilot
+   * engages it progressively with the engine at around 2,000–2,500 rpm; at idle a hard
+   * engagement would stall the engine. So the clutch passes torque in proportion to how far
+   * the engine is running above its stall speed (from 15 % above it), reaching full torque at
+   * fullTorqueEngineRpm. The engine then slows towards the bite point but cannot stall.
+   * Holding the prerotator at idle turns the rotor slowly; adding power spins it up.
+   */
+  prerotatorEngagement(): number {
+    const pre = this.data.rotor!.prerotator;
+    const lo = PREROTATOR_BITE_FRACTION * this.data.engine!.stallRpm;
+    const hi = pre.fullTorqueEngineRpm ?? 0.6 * this.data.propulsion.ratedRpm;
+    return Math.max(0, Math.min(1, (this.powerplant.rpm - lo) / (hi - lo)));
   }
 
   /** The prerotator's drive takes its power from the engine. */

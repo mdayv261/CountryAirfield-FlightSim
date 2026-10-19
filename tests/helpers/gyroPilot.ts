@@ -3,12 +3,12 @@ import type { PhysicsWorld } from '../../src/physics/PhysicsWorld';
 import { mpsToKt } from '../../src/core/units';
 import { fly, TestPilot } from './testPilot';
 
-/** Prerotate on the ground (held in place, ~half throttle) until the prerotator stops gaining. */
+/** Prerotate on the ground (held in place, engine about 2,700 rpm) until the prerotator stops gaining. */
 export function prerotate(world: PhysicsWorld, gy: Gyroplane, seconds = 45) {
   let reached300 = Infinity;
   fly(world, seconds, (t) => {
     gy.pilot.prerotator = 1;
-    gy.pilot.throttle = 0.5;
+    gy.pilot.throttle = 0.65; // engine around 2,700 rpm: the clutch passes full torque
     gy.pilot.elevator = 0;
     // Hold the aircraft still (a pilot holds it with their feet on the ground / chocks).
     gy.body.velocity.set(0, gy.body.velocity.y, 0);
