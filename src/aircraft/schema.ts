@@ -372,6 +372,8 @@ export interface GaugeData {
   redline?: number;
   /** For an airspeed indicator: the white (flap) arc, if any. */
   white?: [number, number];
+  /** 'dial' (needle, the default) or 'lcd' (digital readout, as wide as diameter_m). */
+  style?: 'dial' | 'lcd';
 }
 
 /** The instrument panel (or pod): a flat face in the cockpit with its gauges. */
@@ -666,6 +668,7 @@ export function validateAircraftData(raw: unknown): AircraftData {
         oneOf(gg, path, 'kind', GAUGE_KINDS);
         if (!pair(gg.at_m, 2)) problems.push(`${path}at_m must be [x, y] in metres`);
         num(gg, path, 'diameter_m', 0.03, 0.15);
+        if (gg.style !== undefined) oneOf(gg, path, 'style', ['dial', 'lcd']);
         for (const k of ['min', 'max', 'redline']) num(gg, path, k, -10_000, 100_000, false);
         for (const k of ['green', 'yellow', 'white'])
           if (gg[k] !== undefined && !pair(gg[k], 100_000)) problems.push(`${path}${k} must be [from, to]`);

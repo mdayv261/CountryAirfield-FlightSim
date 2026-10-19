@@ -173,79 +173,79 @@
     "lookDown_deg": 12,
     "gauges": [
       {
-        "kind": "asi",
-        "at_m": [-0.3, 0.05],
-        "diameter_m": 0.08,
-        "max": 200,
-        "green": [49, 139],
-        "yellow": [139, 173],
-        "redline": 173
-      },
-      {
-        "kind": "attitude",
-        "at_m": [-0.215, 0.05],
-        "diameter_m": 0.08
-      },
-      {
-        "kind": "altimeter",
-        "at_m": [-0.13, 0.05],
-        "diameter_m": 0.08
-      },
-      {
-        "kind": "slip",
-        "at_m": [-0.3, -0.045],
-        "diameter_m": 0.07
-      },
-      {
-        "kind": "dg",
-        "at_m": [-0.215, -0.045],
-        "diameter_m": 0.08
-      },
-      {
-        "kind": "vsi",
-        "at_m": [-0.13, -0.045],
-        "diameter_m": 0.08,
-        "max": 2000
-      },
-      {
         "kind": "gmeter",
-        "at_m": [-0.02, 0.05],
-        "diameter_m": 0.08,
+        "at_m": [-0.249, 0.05],
+        "diameter_m": 0.075,
         "min": -5,
         "max": 10,
         "green": [-5, 6],
         "redline": 6
       },
       {
+        "kind": "attitude",
+        "at_m": [-0.166, 0.05],
+        "diameter_m": 0.075
+      },
+      {
+        "kind": "altimeter",
+        "at_m": [-0.083, 0.05],
+        "diameter_m": 0.075
+      },
+      {
+        "kind": "asi",
+        "at_m": [0, 0.05],
+        "diameter_m": 0.075,
+        "max": 200,
+        "green": [49, 139],
+        "yellow": [139, 173],
+        "redline": 173
+      },
+      {
+        "kind": "vsi",
+        "at_m": [0.083, 0.05],
+        "diameter_m": 0.075,
+        "max": 2000
+      },
+      {
+        "kind": "dg",
+        "at_m": [0.166, 0.05],
+        "diameter_m": 0.075
+      },
+      {
+        "kind": "compass",
+        "at_m": [-0.085, -0.05],
+        "diameter_m": 0.065
+      },
+      {
+        "kind": "slip",
+        "at_m": [0, -0.055],
+        "diameter_m": 0.07
+      },
+      {
         "kind": "tacho",
-        "at_m": [0.065, 0.05],
-        "diameter_m": 0.08,
+        "at_m": [0.085, -0.05],
+        "diameter_m": 0.07,
         "max": 3500,
         "green": [2000, 2700],
         "redline": 2700
       },
       {
         "kind": "map",
-        "at_m": [0.15, 0.05],
-        "diameter_m": 0.08,
+        "at_m": [0.16, -0.05],
+        "diameter_m": 0.07,
         "min": 10,
         "max": 35,
         "green": [15, 29]
       },
       {
-        "kind": "compass",
-        "at_m": [0.275, 0.055],
-        "diameter_m": 0.065
-      },
-      {
         "kind": "fuel",
-        "at_m": [0.0, -0.05],
-        "diameter_m": 0.06,
+        "at_m": [0.235, -0.05],
+        "diameter_m": 0.065,
         "max": 151
       },
       {
         "kind": "cht",
-        "at_m": [0.08, -0.05],
+        "at_m": [0.305, -0.05],
         "diameter_m": 0.06,
         "min": 50,
         "max": 300,

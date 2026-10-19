@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { AIRCRAFT } from '../src/aircraft';
 import { GAUGE_KINDS } from '../src/aircraft/schema';
-import { altimeterAngles, dialAngle, dialScale, gaugeValue, slipBallPosition, vsiAngle } from '../src/cockpit/gauges';
+import { altimeterAngles, dialAngle, dialScale, gaugeValue, lcdText, slipBallPosition, vsiAngle } from '../src/cockpit/gauges';
 import { bearingDeg, INSTRUMENT_LAG, Instruments } from '../src/cockpit/instruments';
 import { FIELD_ELEVATION_M } from '../src/core/constants';
 import { mpsToFpm, mpsToKt, mToFt } from '../src/core/units';
@@ -134,6 +134,32 @@ describe('gauges agree with the HUD', () => {
       for (const k of [...base, ...more]) expect(kinds, `${id} ${k}`).toContain(k);
       expect(kinds.every((k) => (GAUGE_KINDS as readonly string[]).includes(k))).toBe(true);
     }
+  });
+
+  it('panel layout: flight instruments on top with the ASI centred, ALT left, VSI right; slip under the ASI, compass left of it, engine gauges right', () => {
+    const flight = ['asi', 'altimeter', 'vsi', 'attitude', 'dg', 'gmeter'];
+    for (const ac of Object.values(AIRCRAFT)) {
+      const gs = ac.panel!.gauges;
+      const at = (k: string) => gs.find((g) => g.kind === k)!.at_m;
+      const asi = at('asi');
+      expect(asi[0], ac.id).toBe(0);
+      expect(at('altimeter')[0]).toBeLessThan(0);
+      expect(at('altimeter')[1]).toBe(asi[1]);
+      expect(at('vsi')[0]).toBeGreaterThan(0);
+      expect(at('vsi')[1]).toBe(asi[1]);
+      for (const g of gs) if (flight.includes(g.kind)) expect(g.at_m[1], `${ac.id} ${g.kind}`).toBe(asi[1]);
+      const slip = at('slip');
+      expect(slip[0]).toBe(0);
+      expect(slip[1]).toBeLessThan(asi[1]);
+      expect(at('compass')[0]).toBeLessThan(0);
+      for (const g of gs)
+        if (!flight.includes(g.kind) && g.kind !== 'slip' && g.kind !== 'compass') {
+          expect(g.at_m[0], `${ac.id} ${g.kind}`).toBeGreaterThan(0);
+          expect(g.at_m[1], `${ac.id} ${g.kind}`).toBeLessThan(asi[1]);
+        }
+    }
+    expect(AIRCRAFT.bensenB8M.panel!.gauges.find((g) => g.kind === 'rotorTacho')!.style).toBe('lcd');
+    expect(lcdText(362.6)).toBe('363');
   });
 
   it('no two gauges on a panel overlap, and all sit on the panel face', () => {

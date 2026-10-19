@@ -20,6 +20,9 @@ const COLOURS = {
   symbol: '#ffb21e',
 };
 
+/** LCD readout colours: liquid-crystal window, normal digits, and digits outside the limits. */
+const LCD = { background: '#9fae8c', digits: '#1b2414', alarm: '#b3201a' };
+
 /** Needle sweep (start and end angle, degrees from 12 o'clock) and default scale of each dial. */
 const DIALS: Partial<Record<GaugeKind, { start: number; end: number; min: number; max: number; label: string }>> = {
   asi: { start: -150, end: 150, min: 0, max: 100, label: 'KNOTS' },
@@ -409,8 +412,38 @@ function dg(ctx: CanvasRenderingContext2D, hdg: number, cx: number, cy: number, 
   ctx.stroke();
 }
 
+/** What an LCD readout shows: the value rounded to a whole number. */
+export function lcdText(value: number): string {
+  return Math.max(0, Math.round(value)).toString();
+}
+
+/**
+ * Digital LCD readout (a modern rotor tacho): grey-green liquid-crystal window with dark
+ * digits in a black bezel, the label underneath. Outside the green band (or past the red
+ * line) the digits turn red, like the warning backlight on such units.
+ */
+function lcd(ctx: CanvasRenderingContext2D, g: GaugeData, value: number, cx: number, cy: number, R: number): void {
+  const w = 2 * R;
+  const h = R * 1.1;
+  ctx.fillStyle = '#0d0d0d';
+  ctx.fillRect(cx - w / 2, cy - h / 2, w, h);
+  const iw = w * 0.86;
+  const ih = h * 0.56;
+  const top = cy - h / 2 + h * 0.1;
+  ctx.fillStyle = LCD.background;
+  ctx.fillRect(cx - iw / 2, top, iw, ih);
+  const alarm = (g.redline !== undefined && value > g.redline) || (g.green !== undefined && value > 1 && value < g.green[0]);
+  ctx.fillStyle = alarm ? LCD.alarm : LCD.digits;
+  ctx.font = `bold ${Math.round(ih * 0.85)}px ui-monospace, Menlo, Consolas, monospace`;
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(lcdText(value), cx + iw / 2 - iw * 0.06, top + ih / 2 + ih * 0.04);
+  text(ctx, (DIALS[g.kind]?.label ?? '').toUpperCase(), cx, cy + h / 2 - h * 0.15, h * 0.17);
+}
+
 /** Draw one gauge, centred at (cx, cy) with radius R in canvas pixels. */
 export function drawGauge(ctx: CanvasRenderingContext2D, g: GaugeData, r: InstrumentReadings, cx: number, cy: number, R: number): void {
+  if (g.style === 'lcd') return lcd(ctx, g, gaugeValue(g.kind, r), cx, cy, R);
   switch (g.kind) {
     case 'altimeter':
       return altimeter(ctx, r.altitudeFt, cx, cy, R);

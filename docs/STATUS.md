@@ -35,8 +35,10 @@
     indicator, DG, MAP, G-meter with max/min tell-tale needles.
   - `src/cockpit/Panel.ts`: panel drawn to a canvas texture on a 3D panel in the model (unlit face, redrawn every frame
     in the cockpit view, 4 Hz otherwise). Layout and scales per aircraft in each JSON's `panel` block (knots, °C, rpm):
-    Air-Bike pod (ASI, ALT, VSI, RPM, EGT, compass, slip, fuel, CHT), gyro pod (plus rotor rpm), Decathlon six-pack
-    (ASI, AI, ALT, slip, DG, VSI) plus G-meter, RPM, MAP, compass, fuel, CHT. Open-cockpit pods stand on a post.
+    Layout (user, 2026-10-20): flight instruments across the top with the ASI centred, ALT left and VSI right (Decathlon:
+    G-meter, AI, ALT, ASI, VSI, DG); below, the slip ball under the ASI, compass to its left, engine gauges to its
+    right (Air-Bike RPM, fuel, EGT, CHT; gyro RPM, rotor rpm LCD readout, fuel, EGT, CHT; Decathlon RPM, MAP, fuel,
+    CHT). The gyro's rotor tacho is a digital LCD (digits turn red outside 200–400 rpm). Open-cockpit pods stand on a post.
   - Engine temperatures (`src/physics/engineTemps.ts`): CHT settles where combustion heat (∝ charge flow, manifold
     pressure x rpm) balances fin cooling (∝ cooling-air speed^0.5, airspeed plus part of the slipstream), with a
     1–2 min time constant; EGT follows power in seconds. About 200–210 °C after a full-power climb, 65–80 °C after a
@@ -190,7 +192,7 @@
 - Measured in Chrome on the Mac mini M4 (2560x1440 display at 75 Hz): 75 fps, mean frame 13.34 ms,
   p95 13.6 ms, max 14.4 ms over 300 frames, so no dropped frames. The browser locks to the display's 75 Hz refresh.
   Physics holds 120 Hz. P pauses (physics 0 Hz, render continues) and resumes cleanly. No console errors.
-- Tests: 212 passing (Stage 7 added engine-temperature, instrument, HUD/gauge agreement, gauge geometry and view suites; Stage 6 added rotor, gyro performance and static-friction tests; Stage 5 added Decathlon performance, aerobatics, propeller-effects suites; engine response, pitch-attitude check, auto-rudder and the joystick profile added since; Stage 4 added aero, powerplant and Air-Bike performance/circuit suites; Stage 3 added rigid body, atmosphere, wind, gear and input suites). Highlights: free fall matches ½gt²;
+- Tests: 213 passing (Stage 7 added engine-temperature, instrument, HUD/gauge agreement, gauge geometry and view suites; Stage 6 added rotor, gyro performance and static-friction tests; Stage 5 added Decathlon performance, aerobatics, propeller-effects suites; engine response, pitch-attitude check, auto-rudder and the joystick profile added since; Stage 4 added aero, powerplant and Air-Bike performance/circuit suites; Stage 3 added rigid body, atmosphere, wind, gear and input suites). Highlights: free fall matches ½gt²;
   a torque-free tumble (with the intermediate-axis flip) conserves energy to 1e-6; an undamped strut bounce returns to its
   release height within 1%; all three aircraft settle at rest on their wheels (loads sum to weight, struts compress by load/k,
   taildraggers 8–13° nose-up); braking stops in v²/(2μg) on gravel and grass; rolling coast distance follows the rolling

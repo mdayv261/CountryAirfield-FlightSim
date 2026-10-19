@@ -164,81 +164,81 @@
   },
   "panel": {
     "position_m": [0, 0.05, -0.85],
-    "size_m": [0.44, 0.15],
+    "size_m": [0.6, 0.15],
     "tilt_deg": 20,
     "colour": "#2b2b2b",
     "lookDown_deg": 12,
     "postTo_m": [0, -0.55, -0.9],
     "gauges": [
       {
+        "kind": "altimeter",
+        "at_m": [-0.07, 0.035],
+        "diameter_m": 0.064
+      },
+      {
         "kind": "asi",
-        "at_m": [-0.18, 0.035],
-        "diameter_m": 0.062,
+        "at_m": [0, 0.035],
+        "diameter_m": 0.064,
         "max": 100,
         "green": [20, 70],
         "yellow": [70, 82],
         "redline": 82
       },
       {
-        "kind": "altimeter",
-        "at_m": [-0.11, 0.035],
-        "diameter_m": 0.062
-      },
-      {
         "kind": "vsi",
-        "at_m": [-0.04, 0.035],
-        "diameter_m": 0.062,
+        "at_m": [0.07, 0.035],
+        "diameter_m": 0.064,
         "max": 1500
       },
       {
+        "kind": "compass",
+        "at_m": [-0.07, -0.04],
+        "diameter_m": 0.05
+      },
+      {
+        "kind": "slip",
+        "at_m": [0, -0.045],
+        "diameter_m": 0.05
+      },
+      {
         "kind": "tacho",
-        "at_m": [0.03, 0.035],
-        "diameter_m": 0.062,
+        "at_m": [0.06, -0.04],
+        "diameter_m": 0.048,
         "max": 5000,
         "green": [2000, 4100],
         "redline": 4100
       },
       {
         "kind": "rotorTacho",
-        "at_m": [0.1, 0.035],
-        "diameter_m": 0.062,
-        "max": 500,
+        "at_m": [0.118, -0.04],
+        "diameter_m": 0.06,
+        "style": "lcd",
         "green": [200, 400],
         "redline": 400
       },
       {
-        "kind": "cht",
-        "at_m": [0.175, 0.04],
-        "diameter_m": 0.05,
-        "min": 50,
-        "max": 300,
-        "green": [120, 240],
-        "redline": 260
-      },
-      {
-        "kind": "compass",
-        "at_m": [-0.18, -0.04],
-        "diameter_m": 0.055
-      },
-      {
-        "kind": "slip",
-        "at_m": [-0.11, -0.045],
-        "diameter_m": 0.05
-      },
-      {
         "kind": "fuel",
-        "at_m": [-0.04, -0.04],
-        "diameter_m": 0.05,
+        "at_m": [0.178, -0.04],
+        "diameter_m": 0.048,
         "max": 20
       },
       {
         "kind": "egt",
-        "at_m": [0.175, -0.04],
-        "diameter_m": 0.05,
+        "at_m": [0.231, -0.04],
+        "diameter_m": 0.048,
         "min": 200,
         "max": 800,
         "green": [480, 650],
         "redline": 680
+      },
+      {
+        "kind": "cht",
+        "at_m": [0.276, -0.04],
+        "diameter_m": 0.042,
+        "min": 50,
+        "max": 300,
+        "green": [120, 240],
+        "redline": 260
       }
     ]
   },
