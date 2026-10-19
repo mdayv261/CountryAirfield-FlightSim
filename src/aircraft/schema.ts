@@ -282,8 +282,6 @@ export interface RotorData {
    */
   stickFreeRollGain?: number;
   stickFreeRollDamping_s?: number;
-  /** Time the disc takes to follow the shaft when the airframe rotates (gives damping), s. */
-  flapLag_s: number;
   /** Largest blowback (disc tilting back with speed), degrees. */
   maxBlowback_deg: number;
   /** Bearing friction torque, N m. */
@@ -500,7 +498,6 @@ export function validateAircraftData(raw: unknown): AircraftData {
     num(r, 'rotor.', 'headPitchBackRange_deg', 1, 30, false);
     num(r, 'rotor.', 'stickFreeRollGain', 0, 2, false);
     num(r, 'rotor.', 'stickFreeRollDamping_s', 0, 1, false);
-    num(r, 'rotor.', 'flapLag_s', 0, 1);
     num(r, 'rotor.', 'maxBlowback_deg', 0, 20);
     num(r, 'rotor.', 'bearingFriction_Nm', 0, 50);
     oneOf(r, 'rotor.', 'rotation', ['clockwise', 'anticlockwise']);

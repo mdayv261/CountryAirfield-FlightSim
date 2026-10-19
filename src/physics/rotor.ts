@@ -7,6 +7,8 @@ const TWO_PI = 2 * Math.PI;
 const MIN_TIP_SPEED = 1;
 /** Momentum-theory iterations for the induced velocity each step (it changes slowly). */
 const INFLOW_ITERATIONS = 4;
+/** Cap on the disc lag, s: a nearly stopped rotor on the ground would otherwise give a huge one. */
+const MAX_FLAP_LAG_S = 0.5;
 /** Ground effect never cuts the induced flow below this fraction (the formula breaks down very close in). */
 const MIN_GROUND_FACTOR = 0.5;
 
@@ -69,8 +71,12 @@ export interface RotorOutput {
  *  - The disc. Thrust acts along the disc's axis, through the hub. The stick tilts the head
  *    (and so the disc) in pitch and roll; airflow across the disc tilts it further back,
  *    "blowback" (flapping a1 = 2μ(4θ/3 + λ)/(1 − μ²/2)), which gives speed stability; and
- *    when the airframe rotates the disc lags behind it for a moment (flapLag_s), which gives
- *    pitch and roll damping. A teetering rotor passes no moment through its hub, so all
+ *    when the airframe rotates the disc lags behind it for a moment, which gives pitch and
+ *    roll damping. The lag is the blades' flapping time constant τ = 16 / (γ Ω), where the
+ *    Lock number γ = ρ a c R⁴ / I_blade compares the air forces on a blade with its inertia.
+ *    Light-ish wooden/aluminium gyro blades have γ ≈ 4, so at 370 rpm τ ≈ 0.11 s: the disc
+ *    resists a roll strongly and full sideways stick gives a steady roll of about 60°/s.
+ *    At low rotor rpm the lag grows and the controls go soft, as in a real gyro. A teetering rotor passes no moment through its hub, so all
  *    control comes from tilting the thrust line relative to the CG: with no thrust (zero g)
  *    the pilot has no control at all. That is why gyro pushovers are so dangerous.
  *  - Ground effect: near the ground the downwash cannot get away freely, so less induced
@@ -96,6 +102,8 @@ export class Rotor {
   private readonly pitchRange: number;
   private readonly pitchBackRange: number;
   private readonly rollRange: number;
+  /** Lock number per unit air density: a c R⁴ / I_blade (γ = ρ times this). */
+  private readonly lockPerDensity: number;
   private readonly prerotMaxOmega: number;
   /** +1 if the rotor turns anticlockwise seen from above (spin vector along body +y). */
   private readonly spinSense: number;
@@ -134,12 +142,19 @@ export class Rotor {
     this.pitchRange = degToRad(data.headPitchRange_deg);
     this.pitchBackRange = degToRad(data.headPitchBackRange_deg ?? data.headPitchRange_deg);
     this.rollRange = degToRad(data.headRollRange_deg);
+    this.lockPerDensity = (data.liftSlope * data.bladeChord_m * this.radius ** 4) / (data.inertia_kgm2 / blades);
     this.prerotMaxOmega = (data.prerotator.maxRpm / 60) * TWO_PI;
     this.spinSense = data.rotation === 'anticlockwise' ? 1 : -1;
   }
 
   get rpm(): number {
     return (this.omega * 60) / TWO_PI;
+  }
+
+  /** Flapping time constant 16 / (γ Ω), s: how long the disc takes to follow the shaft. */
+  flapLag(density: number): number {
+    const gammaOmega = this.lockPerDensity * density * this.omega;
+    return Math.min(16 / Math.max(gammaOmega, 1e-6), MAX_FLAP_LAG_S);
   }
 
   /** Stop the rotor (on the ground, blades parked). */
@@ -174,8 +189,9 @@ export class Rotor {
     const p = -inp.omegaBody.z; // roll rate, right wing down positive
     const q = inp.omegaBody.x; // pitch rate, nose up positive
     const stick = clamp1(inp.stickPitch);
-    let tiltBack = this.neutralPitch + (stick > 0 ? this.pitchBackRange : this.pitchRange) * stick - q * d.flapLag_s;
-    let tiltRight = this.neutralRoll + this.rollRange * clamp1(inp.stickRoll) - p * d.flapLag_s;
+    const lag = this.flapLag(rho);
+    let tiltBack = this.neutralPitch + (stick > 0 ? this.pitchBackRange : this.pitchRange) * stick - q * lag;
+    let tiltRight = this.neutralRoll + this.rollRange * clamp1(inp.stickRoll) - p * lag;
 
     // Air velocity at the hub (aircraft motion through the air plus rotation), and the airflow past it.
     this.vHub.crossVectors(inp.omegaBody, this.hub).add(inp.airVelocityBody);

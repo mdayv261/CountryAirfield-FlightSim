@@ -185,6 +185,27 @@ describe('Bensen B-8M performance', () => {
     expect(idle.bank).toBeLessThan(3);
   }, LONG);
 
+  it('rolls at a gentle, proportional rate: about 30°/s at half stick, 60°/s at full', () => {
+    const rate = (stick: number) => {
+      const { world, gy } = gyroInFlight(800, 53);
+      gy.pilot.throttle = 0.55;
+      fly(world, 60, () => {});
+      let pMax = 0;
+      fly(world, 3, () => {
+        gy.pilot.aileron = stick;
+        pMax = Math.max(pMax, -gy.body.angularVelocity.z);
+      });
+      return (pMax * 180) / Math.PI;
+    };
+    const half = rate(0.5);
+    const full = rate(1);
+    console.info(`roll rate: half stick ${half.toFixed(0)}°/s, full stick ${full.toFixed(0)}°/s`);
+    expect(half).toBeGreaterThan(20);
+    expect(half).toBeLessThan(40);
+    expect(full).toBeGreaterThan(45);
+    expect(full).toBeLessThan(75);
+  }, LONG);
+
   it(`reaches ${T.maxKt.toFixed(0)} kt flat out in level flight`, () => {
     const { world, gy } = gyroInFlight(300, 70);
     const pilot = new TestPilot(gy);
