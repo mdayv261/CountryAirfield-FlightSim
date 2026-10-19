@@ -234,6 +234,7 @@ export const DEVICE_PROFILES: DeviceProfile[] = [
     // Logitech Extreme 3D Pro: X, Y, then axis 5 = twist (rudder), axis 6 = throttle slider
     // (reads −1 pushed fully forward, so inverted), axis 9 = hat switch. Trigger (button 0) =
     // both toe brakes; the sim shares a single brake out with the rudder for steering.
+    // Thumb button (button 1) = gyro prerotator (hold).
     match: /extreme 3d/i,
     bindings: (d) => ({
       roll: axisBinding(d, 0, GAMEPAD.deadzone),
@@ -243,6 +244,7 @@ export const DEVICE_PROFILES: DeviceProfile[] = [
       throttle: axisBinding(d, 6, 0.02, true),
       brakeLeft: buttonBinding(d, 0),
       brakeRight: buttonBinding(d, 0),
+      prerotator: buttonBinding(d, 1),
     }),
   },
 ];

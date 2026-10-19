@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { ktToMps, mpsToKt } from '../../src/core/units';
-import type { FixedWingAircraft } from '../../src/physics/FixedWingAircraft';
+import type { PoweredAircraft } from '../../src/physics/PoweredAircraft';
 import type { PhysicsWorld } from '../../src/physics/PhysicsWorld';
 import { dt, fly, Pid } from './testPilot';
 
@@ -8,7 +8,7 @@ const clamp = (v: number, lo = -1, hi = 1) => Math.min(hi, Math.max(lo, v));
 const deg = Math.PI / 180;
 
 /** Body axes in world space, and the rates in the pilot's sense. */
-function axes(ac: FixedWingAircraft) {
+function axes(ac: PoweredAircraft) {
   const b = ac.body;
   const fwd = b.toWorld(new THREE.Vector3(0, 0, -1));
   const right = b.toWorld(new THREE.Vector3(1, 0, 0));
@@ -41,7 +41,7 @@ export interface ManoeuvreResult {
 }
 
 /** Start straight and level at a speed (IAS-ish), full power, heading north. */
-export function setUp(ac: FixedWingAircraft, height: number, kt: number) {
+export function setUp(ac: PoweredAircraft, height: number, kt: number) {
   ac.body.reset(new THREE.Vector3(0, height, 0));
   ac.body.velocity.set(0, 0, -ktToMps(kt));
   ac.powerplant.start();
@@ -51,7 +51,7 @@ export function setUp(ac: FixedWingAircraft, height: number, kt: number) {
 }
 
 /** Fly level at a speed to settle before a manoeuvre (simple autopilot, throttle by speed). */
-export function settle(world: PhysicsWorld, ac: FixedWingAircraft, kt: number, seconds = 8) {
+export function settle(world: PhysicsWorld, ac: PoweredAircraft, kt: number, seconds = 8) {
   const h0 = ac.body.position.y;
   const speed = new Pid(0.08, 0.04, 0, 1, 0.8);
   const pitch = new Pid(3, 1.5);
@@ -67,7 +67,7 @@ export function settle(world: PhysicsWorld, ac: FixedWingAircraft, kt: number, s
 }
 
 /** Track common measurements while a manoeuvre runs. */
-function tracker(ac: FixedWingAircraft) {
+function tracker(ac: PoweredAircraft) {
   const r: ManoeuvreResult = {
     completed: false, duration: 0, maxG: -Infinity, minG: Infinity, minIasKt: Infinity,
     altitudeChange: 0, headingChangeDeg: 0, overstressed: false, engineAlways: true, log: [],
@@ -100,7 +100,7 @@ function tracker(ac: FixedWingAircraft) {
 }
 
 /** Keep the wings level about the longitudinal axis whatever the pitch (right wing horizontal). */
-function wingsLevel(ac: FixedWingAircraft, inverted = false) {
+function wingsLevel(ac: PoweredAircraft, inverted = false) {
   const a = axes(ac);
   const err = Math.asin(clamp(a.right.y)) * (inverted ? -1 : 1);
   ac.pilot.aileron = clamp(3 * err - 0.5 * a.p);
@@ -111,7 +111,7 @@ function wingsLevel(ac: FixedWingAircraft, inverted = false) {
  * G target is capped by speed (load factor available ∝ IAS²), and back pressure is relaxed
  * whenever the wing gets within 4° of its stalling angle, as a pilot feels the buffet.
  */
-function pullG(ac: FixedWingAircraft, loop: Pid, targetG: number, vsKt: number) {
+function pullG(ac: PoweredAircraft, loop: Pid, targetG: number, vsKt: number) {
   const available = 0.9 * (mpsToKt(ac.state.ias) / vsKt) ** 2;
   const command = loop.update(Math.min(targetG, available) - ac.gMonitor.g);
   const aero = ac.data.aero!;
@@ -121,7 +121,7 @@ function pullG(ac: FixedWingAircraft, loop: Pid, targetG: number, vsKt: number) 
 }
 
 /** Inside loop: pull through 360° of pitch at up to `pullG` g, wings level, full power. */
-export function loop(world: PhysicsWorld, ac: FixedWingAircraft, vsKt: number, targetG = 4) {
+export function loop(world: PhysicsWorld, ac: PoweredAircraft, vsKt: number, targetG = 4) {
   const tr = tracker(ac);
   const gLoop = new Pid(0.25, 0.6, -0.3, 1, 0.3);
   let pitched = 0;
@@ -142,7 +142,7 @@ export function loop(world: PhysicsWorld, ac: FixedWingAircraft, vsKt: number, t
 }
 
 /** Aileron roll: nose up 15°, full aileron to the right through 360°, then level the wings. */
-export function aileronRoll(world: PhysicsWorld, ac: FixedWingAircraft) {
+export function aileronRoll(world: PhysicsWorld, ac: PoweredAircraft) {
   const tr = tracker(ac);
   const pitchLoop = new Pid(3, 0.5);
   let phase: 'raise' | 'roll' | 'stop' = 'raise';
@@ -183,7 +183,7 @@ export function aileronRoll(world: PhysicsWorld, ac: FixedWingAircraft) {
  */
 export function stallTurn(
   world: PhysicsWorld,
-  ac: FixedWingAircraft,
+  ac: PoweredAircraft,
   vsKt: number,
   rudderAtKt = 60,
   /** Yaw still to go (rad) when opposite rudder starts checking the rotation, and when the power comes off. */
@@ -266,7 +266,7 @@ export function stallTurn(
  * ailerons neutral, full opposite rudder, stick forward until the rotation stops, then
  * centralise the rudder and pull out of the dive.
  */
-export function spin(world: PhysicsWorld, ac: FixedWingAircraft, vsKt: number, turns = 2) {
+export function spin(world: PhysicsWorld, ac: PoweredAircraft, vsKt: number, turns = 2) {
   const tr = tracker(ac);
   const speedLoop = new Pid(0.04, 0.012, -0.35, 0.45);
   const pitchLoop = new Pid(3, 1.5);
@@ -349,7 +349,7 @@ export function spin(world: PhysicsWorld, ac: FixedWingAircraft, vsKt: number, t
  * Half-roll to inverted, then hold altitude upside down for `seconds` at full power.
  * Upside down the stick works the other way round: push to raise the nose.
  */
-export function invertedFlight(world: PhysicsWorld, ac: FixedWingAircraft, seconds = 20) {
+export function invertedFlight(world: PhysicsWorld, ac: PoweredAircraft, seconds = 20) {
   const tr = tracker(ac);
   const h0 = ac.body.position.y;
   const pitchLoop = new Pid(3, 1.5);

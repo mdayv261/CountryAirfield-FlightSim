@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { FixedWingAircraft } from '../../physics/FixedWingAircraft';
+import type { PoweredAircraft } from '../../physics/PoweredAircraft';
 import { ColouredMeshBuilder } from '../../world/meshBuilder';
 
 // Shared parts and animation for the procedural aircraft models. Models are built in body
@@ -100,9 +100,12 @@ export abstract class AircraftModel {
   private readonly q = new THREE.Quaternion();
   private propAngle = 0;
 
-  constructor(readonly aircraft: FixedWingAircraft) {
+  constructor(readonly aircraft: PoweredAircraft) {
     this.wingIncidence = ((aircraft.data.aero?.wingIncidence_deg ?? 0) * Math.PI) / 180;
   }
+
+  /** Extra per-frame animation for subclasses (a gyro's rotor, its rudder). */
+  protected animate(_frameDt: number): void {}
 
   /** Add the merged, vertex-coloured airframe mesh. */
   protected addBody(b: ColouredMeshBuilder): void {
@@ -133,15 +136,18 @@ export abstract class AircraftModel {
     this.object.position.lerpVectors(body.prevPosition, body.position, alpha);
     this.object.quaternion.copy(this.q.slerpQuaternions(body.prevOrientation, body.orientation, alpha));
 
-    const a = ac.data.aero!;
+    const a = ac.data.aero;
     const p = ac.pilot;
     const deg = Math.PI / 180;
-    // Surfaces trail aft (+z) of their hinges. A negative rotation about x lifts the trailing
-    // edge; a positive rotation about y swings it to the right.
-    this.elevator.rotation.x = -p.elevator * a.elevatorMax_deg * deg; // stick back: trailing edge up
-    this.rudder.rotation.y = ac.rudderApplied * a.rudderMax_deg * deg; // right pedal: trailing edge right
-    this.aileronR.rotation.x = this.wingIncidence - p.aileron * a.aileronMax_deg * deg; // stick right: right aileron up
-    this.aileronL.rotation.x = this.wingIncidence + p.aileron * a.aileronMax_deg * deg; // ... and left aileron down
+    if (a) {
+      // Surfaces trail aft (+z) of their hinges. A negative rotation about x lifts the trailing
+      // edge; a positive rotation about y swings it to the right.
+      this.elevator.rotation.x = -p.elevator * a.elevatorMax_deg * deg; // stick back: trailing edge up
+      this.rudder.rotation.y = ac.rudderApplied * a.rudderMax_deg * deg; // right pedal: trailing edge right
+      this.aileronR.rotation.x = this.wingIncidence - p.aileron * a.aileronMax_deg * deg; // stick right: right aileron up
+      this.aileronL.rotation.x = this.wingIncidence + p.aileron * a.aileronMax_deg * deg; // ... and left aileron down
+    }
+    this.animate(frameDt);
 
     if (!this.blades || !this.disc) return;
     // +z points back at the pilot, so clockwise as the pilot sees it is a negative angle about z.

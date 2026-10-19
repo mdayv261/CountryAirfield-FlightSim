@@ -91,6 +91,35 @@ describe('aircraft at rest on gear', () => {
   }
 });
 
+describe('static friction', () => {
+  it('a parked aircraft under a steady yaw torque stays put (no creep)', () => {
+    const world = new PhysicsWorld(flat('gravel'));
+    const a = new Airframe(AIRCRAFT.bensenB8M);
+    a.placeOnGround(0, 0, 0, 0, 0.05);
+    world.add(a);
+    simulate(world, 3);
+    const h0 = headingDeg(a.body);
+    const p0 = a.body.position.clone();
+    // 140 N m about the vertical for half a minute: a gyro prerotator's reaction torque.
+    simulate(world, 30, () => a.body.addTorque(new THREE.Vector3(0, 140, 0)));
+    // Only the static-friction springs' small elastic give, no creep.
+    const turned = Math.abs(((headingDeg(a.body) - h0 + 540) % 360) - 180);
+    expect(turned).toBeLessThan(1);
+    expect(a.body.position.distanceTo(p0)).toBeLessThan(0.05);
+  });
+
+  it('it still breaks free when the torque exceeds the grip', () => {
+    const world = new PhysicsWorld(flat('gravel'));
+    const a = new Airframe(AIRCRAFT.bensenB8M);
+    a.placeOnGround(0, 0, 0, 0, 0.05);
+    world.add(a);
+    simulate(world, 3);
+    const h0 = headingDeg(a.body);
+    simulate(world, 3, () => a.body.addTorque(new THREE.Vector3(0, 3000, 0)));
+    expect(Math.abs(((headingDeg(a.body) - h0 + 540) % 360) - 180)).toBeGreaterThan(10);
+  });
+});
+
 describe('tyre friction', () => {
   const stopDistance = (surface: SurfaceType, speed: number, brake: number) => {
     const world = new PhysicsWorld(flat(surface));

@@ -7,7 +7,8 @@
     "engineName": "McCulloch 4318",
     "ratedPowerW": 48470,
     "ratedRpm": 4100,
-    "reductionRatio": 1
+    "reductionRatio": 1,
+    "propDiameter_m": 1.32
   },
   "mass": {
     "emptyKg": 113.4,
@@ -70,6 +71,83 @@
     "yaw_kgm2": 70,
     "rollYaw_kgm2": 0
   },
+  "rotor": {
+    "hubPosition_m": [0, 1.05, 0.05],
+    "bladeChord_m": 0.178,
+    "liftSlope": 5.7,
+    "profileDrag": 0.011,
+    "collectivePitch_deg": 5.5,
+    "maxCTOverSolidity": 0.18,
+    "inertia_kgm2": 60,
+    "headNeutralPitch_deg": 2.5,
+    "headPitchRange_deg": 12,
+    "headPitchBackRange_deg": 20,
+    "headRollRange_deg": 7,
+    "flapLag_s": 0.04,
+    "maxBlowback_deg": 8,
+    "bearingFriction_Nm": 2,
+    "rotation": "anticlockwise",
+    "prerotator": {
+      "torque_Nm": 140,
+      "maxRpm": 330
+    }
+  },
+  "airframeAero": {
+    "dragArea_m2": 0.6,
+    "sideDragArea_m2": 1.2,
+    "surfaces": [
+      {
+        "name": "fin and rudder",
+        "position_m": [0, 0.25, 2.3],
+        "plane": "yaw",
+        "area_m2": 0.45,
+        "aspectRatio": 1.3,
+        "liftSlope": 2.5,
+        "CLmax": 1.0,
+        "CD0": 0.02,
+        "rudderPower": 1.6,
+        "rudderMax_deg": 28,
+        "slipstream": 0.6
+      },
+      {
+        "name": "tailplane",
+        "position_m": [0, 0.05, 2.25],
+        "plane": "pitch",
+        "area_m2": 0.15,
+        "aspectRatio": 2.5,
+        "liftSlope": 3.2,
+        "CLmax": 1.0,
+        "CD0": 0.02,
+        "slipstream": 0.4
+      }
+    ]
+  },
+  "propeller": {
+    "pitch_m": 0.56,
+    "position_m": [0, 0.18, 0.9],
+    "J": [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.0, 1.5],
+    "CT": [0.1053, 0.0865, 0.0661, 0.0524, 0.0402, 0.0224, 0.0034, -0.02, -0.045, -0.09, -0.2],
+    "CP": [0.034, 0.034, 0.0323, 0.0289, 0.023, 0.0153, 0.0068, -0.003, -0.015, -0.04, -0.1],
+    "inertia_kgm2": 0.35,
+    "rotation": "clockwise",
+    "pFactor": 0.2,
+    "swirlYawCn": 0.03
+  },
+  "engine": {
+    "strokes": 2,
+    "cylinders": 4,
+    "rpm": [0, 1000, 2000, 3000, 3500, 4100, 4500],
+    "powerFraction": [0, 0.15, 0.4, 0.72, 0.86, 1.0, 0.95],
+    "idleThrottle": 0.15,
+    "idleRpm": 1600,
+    "throttleLag_s": 0.1,
+    "inertia_kgm2": 0.03,
+    "frictionTorque_Nm": 1.5,
+    "frictionPerRpm_Nm": 0.0005,
+    "stallRpm": 900,
+    "bsfc_kgPerkWh": 0.5,
+    "driveEfficiency": 1.0
+  },
   "limits": {
     "vne_mps": 42.184,
     "rotorRpmMin": 200,
@@ -90,6 +168,13 @@
     "Take-off roll 30 m assumes prerotation. Brakes TBC in Stage 6.",
     "Gear and inertia are Stage 3 engineering estimates, to be refined in Stage 6.",
     "Gear: foot-steered nosewheel (+/-34 deg) 1.5 m ahead of CG, mains 0.25 m behind CG on a 1.5 m axle, small keel tail skid; sits level.",
-    "Inertia is the airframe only (pilot, engine, keel); rotor inertia is modelled separately in Stage 6."
+    "Inertia is the airframe only (pilot, engine, keel); rotor inertia is modelled separately in Stage 6.",
+    "Stage 6 flight model (estimates tuned to the CLAUDE.md targets; see docs/STATUS.md):",
+    "Rotor: 2-blade teetering, 7 in (0.178 m) chord, solidity 0.037, NACA 8-H-12 type blades (lift slope 5.7/rad, profile drag 0.011), fixed pitch 5.5 deg (sets ~360-370 rpm in cruise), ~60 kg m2. Head tilted back 2.5 deg at neutral stick (trims about 50 kt hands-off), 12 deg forward and 20 deg back (to load the rotor on the take-off roll), +/-7 deg roll.",
+    "Prerotator: clutch from the engine, 140 N m at the rotor, drives up to 330 rpm (near flight rpm, needed for the CLAUDE.md 30 m take-off roll).",
+    "Propeller: 52 x 22 in wooden pusher, direct drive, about 150 kgf static thrust, thrust line 0.18 m above the CG (nose-down moment with power: the power-pushover hazard).",
+    "Airframe: open frame with pilot, drag area 0.6 m2 (sets the 82 kt top speed); fin and rudder (0.45 m2) in the slipstream; small tailplane (0.15 m2, assumed: the stock B-8M had none; this small one keeps pitch lively, so a sharp pushover really does unload the rotor).",
+    "Cruise (decided 2026-10-19): the Bensen 65 mph (56 kt) cruise is level flight at about 45% power (~3,500 rpm); full power gives the 82 kt maximum.",
+    "Engine: McCulloch 4318, 65 hp at 4100 rpm, two-stroke flat four, direct drive (assumed); bsfc 0.5 kg/kWh."
   ]
 }

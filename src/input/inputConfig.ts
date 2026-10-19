@@ -19,6 +19,7 @@ export const KEYBOARD = {
     propUp: ['Home'],
     propDown: ['End'],
     brakes: ['KeyB'],
+    prerotator: ['KeyQ'],
   },
 };
 
@@ -40,5 +41,5 @@ export const GAMEPAD = {
    * get any newly defaulted channels added to existing saved bindings (never overwriting).
    */
   defaultsVersionKey: 'cfs.input.defaultsVersion',
-  defaultsVersion: 3,
+  defaultsVersion: 4,
 };

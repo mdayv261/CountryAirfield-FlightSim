@@ -58,6 +58,18 @@ export const GEAR_MODEL = {
    */
   stiffnessLimit: 1.0,
   dampingLimit: 0.8,
+  /**
+   * Static friction. Below stickSpeed a contact patch sticks to the ground point it is on,
+   * held by a stiff spring and damper (natural frequency stickHz, close to critically
+   * damped). It stays stuck until holding it would need more than the friction available,
+   * or until it slides faster than releaseSpeed. Without this, the smoothed dynamic
+   * friction lets a steady sideways force (a slope, a crosswind, a gyro's prerotator torque)
+   * creep the aircraft along indefinitely.
+   */
+  stickSpeed_mps: 0.05,
+  releaseSpeed_mps: 0.3,
+  stickHz: 4,
+  stickDamping: 0.8,
   /** Tyre slip angle at which side force reaches its peak (μN), rad (~8°). */
   peakSlipAngle_rad: 0.14,
   /** Strut must stay this close to vertical to the ground for the contact model (cos of angle). */
@@ -106,9 +118,15 @@ export class GearSet {
   private readonly ub = new THREE.Vector3();
   private readonly ra = new THREE.Vector3();
   private contactsLastStep = 1;
+  /** Ground point each contact is stuck to (static friction), or null while sliding/rolling. */
+  private readonly anchors: Array<THREE.Vector3 | null>;
+  private readonly patch = new THREE.Vector3();
+  private readonly d = new THREE.Vector3();
+  private readonly fs = new THREE.Vector3();
 
   constructor(readonly legs: GearLeg[]) {
     this.rBody = legs.map((l) => new THREE.Vector3(...l.position_m));
+    this.anchors = legs.map(() => null);
     this.states = legs.map(() => ({
       inContact: false,
       compression: 0,
@@ -161,6 +179,7 @@ export class GearSet {
       const h = ground.heightAt(this.cw.x, this.cw.z);
       const depth = h - this.cw.y;
       if (depth <= 0) {
+        this.anchors[i] = null;
         Object.assign(st, { inContact: false, compression: 0, normalForce: 0, surface: null, rollingSpeed: 0, slipSpeed: 0 });
         return;
       }
@@ -194,7 +213,14 @@ export class GearSet {
 
       let rollingSpeed = 0;
       let slipSpeed = 0;
-      if (leg.kind === 'skid') {
+      // Ground point under the contact.
+      this.patch.copy(this.cw).addScaledVector(n, penetration);
+      const stuck = this.staticFriction(i, leg.kind, body, r, n, N, props.mu, props.rolling, leg.brake ? this.brakeFor(r.x, controls) : 0, controls);
+      if (stuck) {
+        this.f.add(this.fs);
+        rollingSpeed = 0;
+        slipSpeed = 0;
+      } else if (leg.kind === 'skid') {
         const speed = this.vt.length();
         if (speed > 1e-9) {
           const u = this.tmp.copy(this.vt).divideScalar(speed);
@@ -242,6 +268,81 @@ export class GearSet {
       Object.assign(st, { inContact: true, compression, normalForce: N, surface, rollingSpeed, slipSpeed });
     });
     this.contactsLastStep = Math.max(1, contacts);
+  }
+
+  /**
+   * Static friction for contact i. Returns true (with the force in this.fs) while the patch is
+   * stuck to its anchor point; false when it is sliding or rolling (use dynamic friction).
+   * For a wheel the rolling direction may still roll against its rolling resistance and
+   * brakes: the anchor slides along with it, so only the sideways direction is truly fixed.
+   */
+  private staticFriction(
+    i: number,
+    kind: 'wheel' | 'skid',
+    body: RigidBody,
+    r: THREE.Vector3,
+    n: THREE.Vector3,
+    N: number,
+    mu: number,
+    rolling: number,
+    brake: number,
+    controls: GearControls,
+  ): boolean {
+    const speed = this.vt.length();
+    let anchor = this.anchors[i];
+    if (!anchor) {
+      if (speed > GEAR_MODEL.stickSpeed_mps || N <= 0) return false;
+      anchor = this.anchors[i] = this.patch.clone();
+    }
+    if (speed > GEAR_MODEL.releaseSpeed_mps || N <= 0) {
+      this.anchors[i] = null;
+      return false;
+    }
+    // Wheel axes (for a skid any horizontal pair will do).
+    if (kind === 'wheel') {
+      const leg = this.legs[i];
+      const steerSign = r.z <= 0 ? 1 : -1;
+      const delta = (leg.steerMax_rad ?? 0) * clamp1(controls.pedals) * steerSign;
+      body.toWorld(this.tmp.set(Math.sin(delta), 0, -Math.cos(delta)), this.fwd);
+    } else {
+      body.toWorld(this.tmp.set(0, 0, -1), this.fwd);
+    }
+    this.fwd.addScaledVector(n, -this.fwd.dot(n)).normalize();
+    this.side.crossVectors(this.fwd, n);
+
+    // Spring-damper to the anchor, stiffness from the contact's effective mass so it stays stable.
+    const m = Math.min(this.effectiveMass(body, r, this.fwd), this.effectiveMass(body, r, this.side)) / this.contactsLastStep;
+    const w = 2 * Math.PI * GEAR_MODEL.stickHz;
+    const k = m * w * w;
+    const c = 2 * GEAR_MODEL.stickDamping * m * w;
+    this.d.subVectors(this.patch, anchor);
+    this.d.addScaledVector(n, -this.d.dot(n));
+    this.fs.copy(this.d).multiplyScalar(-k).addScaledVector(this.vt, -c);
+
+    const sideLimit = mu * N;
+    if (kind === 'skid') {
+      if (this.fs.length() > sideLimit) {
+        this.anchors[i] = null;
+        return false;
+      }
+      return true;
+    }
+    let fRoll = this.fs.dot(this.fwd);
+    const fSide = this.fs.dot(this.side);
+    if (Math.abs(fSide) > sideLimit) {
+      this.anchors[i] = null; // skidding sideways
+      return false;
+    }
+    // Rolling direction: the wheel turns once rolling resistance and brakes are overcome.
+    // Let the anchor follow it so the held force stays at that limit.
+    const rollLimit = (rolling + brake * mu) * N;
+    if (Math.abs(fRoll) > rollLimit) {
+      const excess = Math.abs(fRoll) - rollLimit;
+      anchor.addScaledVector(this.fwd, (-Math.sign(fRoll) * excess) / k);
+      fRoll = Math.sign(fRoll) * rollLimit;
+    }
+    this.fs.copy(this.fwd).multiplyScalar(fRoll).addScaledVector(this.side, fSide);
+    return true;
   }
 
   /** Brake demand for a wheel: left wheels use the left toe brake, right the right, centre the average. */

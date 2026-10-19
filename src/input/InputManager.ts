@@ -11,7 +11,8 @@ export type InputSource = 'keyboard' | 'mouse' | 'joystick';
 /**
  * Merges every input device into one ControlState. For each channel, a bound and
  * connected joystick/pedal axis wins; otherwise the mouse stick (pitch and roll, when
- * enabled); otherwise the keyboard. So a stick with no throttle axis still gets
+ * enabled); otherwise the keyboard. Channels on joystick buttons (brakes, prerotator)
+ * also still answer to their keys. So a stick with no throttle axis still gets
  * keyboard throttle, and unplugging a device falls back gracefully.
  */
 export class InputManager {
@@ -52,7 +53,12 @@ export class InputManager {
     const kb = this.keyboardControls.state;
     for (const ch of CHANNELS) {
       const joy = this.gamepads.read(ch);
-      if (joy !== undefined) {
+      if (joy !== undefined && this.gamepads.bindings[ch]?.kind === 'button') {
+        // A joystick button (brakes, prerotator) and its keyboard key both work: take whichever is pressed.
+        const key = this.keyboardEnabled ? kb[ch] : 0;
+        this.controls[ch] = Math.max(joy, key);
+        this.source[ch] = key > joy ? 'keyboard' : 'joystick';
+      } else if (joy !== undefined) {
         this.controls[ch] = joy;
         this.source[ch] = 'joystick';
       } else if (this.mouse.enabled && (ch === 'pitch' || ch === 'roll')) {

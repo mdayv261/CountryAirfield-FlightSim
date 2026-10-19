@@ -4,6 +4,8 @@ import type { AircraftData } from '../../src/aircraft/schema';
 import { PHYSICS_DT } from '../../src/core/constants';
 import { ktToMps, mpsToKt } from '../../src/core/units';
 import { FixedWingAircraft } from '../../src/physics/FixedWingAircraft';
+import { Gyroplane } from '../../src/physics/Gyroplane';
+import type { PoweredAircraft } from '../../src/physics/PoweredAircraft';
 import type { Ground } from '../../src/physics/gear';
 import { PhysicsWorld } from '../../src/physics/PhysicsWorld';
 import { surfaceAt } from '../../src/physics/surfaces';
@@ -17,13 +19,13 @@ export const fieldGround: Ground = { heightAt: () => 0, surfaceAt };
 
 export function makeWorld(data: AircraftData = AIRCRAFT.airbike103, fuelFraction = 1) {
   const world = new PhysicsWorld(fieldGround);
-  const ac = new FixedWingAircraft(data, fuelFraction);
+  const ac = data.type === 'gyroplane' ? new Gyroplane(data, fuelFraction) : new FixedWingAircraft(data, fuelFraction);
   world.add(ac);
   return { world, ac };
 }
 
 /** Attitude angles of the body: pitch θ (nose up +), bank φ (right wing down +), heading ψ (true, rad). */
-export function attitude(ac: FixedWingAircraft) {
+export function attitude(ac: PoweredAircraft) {
   const b = ac.body;
   const fwd = b.toWorld(new THREE.Vector3(0, 0, -1));
   const right = b.toWorld(new THREE.Vector3(1, 0, 0));
@@ -36,7 +38,7 @@ export function attitude(ac: FixedWingAircraft) {
 }
 
 /** Put the aircraft in the air at an IAS-ish speed, level, heading north, engine running. */
-export function startInFlight(ac: FixedWingAircraft, heightM: number, speedKt: number, alphaDeg = 3, headingDeg = 0) {
+export function startInFlight(ac: PoweredAircraft, heightM: number, speedKt: number, alphaDeg = 3, headingDeg = 0) {
   const q = new THREE.Quaternion().setFromEuler(new THREE.Euler((alphaDeg * Math.PI) / 180, (-headingDeg * Math.PI) / 180, 0, 'YXZ'));
   ac.body.reset(new THREE.Vector3(0, heightM, 0), q);
   const h = (headingDeg * Math.PI) / 180;
@@ -84,7 +86,7 @@ export class TestPilot {
   readonly groundSteer = new Pid(2.5, 0.3);
   pitchCmd = 0;
 
-  constructor(readonly ac: FixedWingAircraft) {}
+  constructor(readonly ac: PoweredAircraft) {}
 
   /** Hold a pitch attitude with the elevator. */
   pitchTo(theta: number) {

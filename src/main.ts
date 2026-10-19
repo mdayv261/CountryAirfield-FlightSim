@@ -18,6 +18,9 @@ import { mpsToKt } from './core/units';
 import { FixedWingAircraft } from './physics/FixedWingAircraft';
 import { AirBikeModel } from './aircraft/models/airbike103Model';
 import { DecathlonModel } from './aircraft/models/decathlonModel';
+import { GyroModel } from './aircraft/models/gyroModel';
+import { Gyroplane } from './physics/Gyroplane';
+import type { PoweredAircraft } from './physics/PoweredAircraft';
 import type { AircraftModel } from './aircraft/models/AircraftModel';
 import type { ControlState } from './input/controls';
 import { AircraftCamera, type AircraftView } from './ui/AircraftCamera';
@@ -88,7 +91,7 @@ const throwBlock = () => {
 };
 
 // The aircraft (Tab switches). Spawn points on both runways, both directions (keys 7, 8, 9, 0).
-const FLEET: Array<{ aircraft: FixedWingAircraft; model: AircraftModel }> = [
+const FLEET: Array<{ aircraft: PoweredAircraft; model: AircraftModel }> = [
   (() => {
     const ac = new FixedWingAircraft(AIRCRAFT.airbike103);
     return { aircraft: ac, model: new AirBikeModel(ac) };
@@ -96,6 +99,10 @@ const FLEET: Array<{ aircraft: FixedWingAircraft; model: AircraftModel }> = [
   (() => {
     const ac = new FixedWingAircraft(AIRCRAFT.decathlon8kcab);
     return { aircraft: ac, model: new DecathlonModel(ac) };
+  })(),
+  (() => {
+    const ac = new Gyroplane(AIRCRAFT.bensenB8M);
+    return { aircraft: ac, model: new GyroModel(ac) };
   })(),
 ];
 let fleetIndex = 0;
@@ -176,6 +183,7 @@ const loop = new GameLoop({
         brakeLeft,
         brakeRight,
         propLever: c.propLever,
+        prerotator: c.prerotator,
       });
       Object.assign(block.controls, { throttle: 0, pedals: 0, brakeLeft: 0, brakeRight: 0 });
     }

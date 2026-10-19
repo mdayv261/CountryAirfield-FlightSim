@@ -31,5 +31,6 @@ export class KeyboardControls {
     s.throttle = lever(s.throttle, this.dir(k.throttleDown, k.throttleUp));
     s.propLever = lever(s.propLever, this.dir(k.propDown, k.propUp));
     s.brakeLeft = s.brakeRight = this.held(k.brakes) ? 1 : 0;
+    s.prerotator = this.held(k.prerotator) ? 1 : 0;
   }
 }

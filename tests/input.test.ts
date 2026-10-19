@@ -154,6 +154,13 @@ describe('devices', () => {
       expect(g.read('throttle')).toBe(0);
     });
 
+    it('uses the thumb button as the gyro prerotator', () => {
+      const pad = fakePad(ID, [0, 0, 0, 0, 0, 0, 1, 0, 0, 1.286], [0, 1, 0, 0]);
+      const g = new GamepadInput(() => [pad], memoryStorage());
+      g.poll();
+      expect(g.read('prerotator')).toBe(1);
+    });
+
     it('uses the trigger as the brakes', () => {
       const pad = fakePad(ID, [0, 0, 0, 0, 0, 0, 1, 0, 0, 1.286], [1, 0, 0, 0]);
       const g = new GamepadInput(() => [pad], memoryStorage());
@@ -202,6 +209,20 @@ describe('devices', () => {
     expect(input.source.roll).toBe('keyboard');
     expect(input.controls.roll).toBe(-1);
     send('keyup', 'ArrowLeft');
+  });
+
+  it('a channel on a joystick button still answers to its keyboard key', () => {
+    const pad = fakePad('Logitech Extreme 3D Pro (Vendor: 046d Product: c215)', [0, 0, 0, 0, 0, 0, 1, 0, 0, 1.286], [0, 0, 0, 0]);
+    const g = new GamepadInput(() => [pad], memoryStorage());
+    const { keyboard, send } = fakeKeys();
+    const input = new InputManager(keyboard, g, new MouseStick(new EventTarget() as unknown as Window));
+    input.keyboardEnabled = true;
+    send('keydown', 'KeyQ');
+    input.update(1 / 60);
+    expect(input.controls.prerotator).toBe(1);
+    send('keyup', 'KeyQ');
+    input.update(1 / 60);
+    expect(input.controls.prerotator).toBe(0);
   });
 
   it('keyboard flight keys move stick, pedals, throttle and brakes', () => {

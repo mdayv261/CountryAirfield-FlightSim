@@ -1,5 +1,6 @@
 import { mpsToFpm, mpsToKt, mToFt, paToInHg, radToDeg } from '../core/units';
-import type { FixedWingAircraft } from '../physics/FixedWingAircraft';
+import { Gyroplane } from '../physics/Gyroplane';
+import type { PoweredAircraft } from '../physics/PoweredAircraft';
 
 /** Field elevation, ft, so the altimeter reads height above sea level (QNH). */
 const FIELD_FT = 50;
@@ -18,7 +19,7 @@ export class Hud {
   private stallAlpha = 0;
   visible = true;
 
-  constructor(parent: HTMLElement, private aircraft: FixedWingAircraft) {
+  constructor(parent: HTMLElement, private aircraft: PoweredAircraft) {
     this.el = document.createElement('div');
     Object.assign(this.el.style, {
       position: 'fixed',
@@ -38,10 +39,11 @@ export class Hud {
     this.setAircraft(aircraft);
   }
 
-  setAircraft(aircraft: FixedWingAircraft): void {
+  setAircraft(aircraft: PoweredAircraft): void {
     this.aircraft = aircraft;
-    const a = aircraft.data.aero!;
-    this.stallAlpha = a.alpha_deg[a.CL.indexOf(Math.max(...a.CL))];
+    const a = aircraft.data.aero;
+    // Gyroplanes have no wing to stall: no stall warning.
+    this.stallAlpha = a ? a.alpha_deg[a.CL.indexOf(Math.max(...a.CL))] : Infinity;
     this.lastText = '';
   }
 
@@ -68,6 +70,10 @@ export class Hud {
       `HDG   ${headingDeg.toFixed(0).padStart(3, '0')}°`,
       `RPM  ${pp.out.engineRpm.toFixed(0).padStart(5)}${pp.running ? '' : ' OFF'}`,
     ];
+    const gyro = ac instanceof Gyroplane ? ac : null;
+    if (gyro) {
+      lines.push(`ROTOR${gyro.rotor.rpm.toFixed(0).padStart(5)} rpm${gyro.rotor.out.prerotatorTorque > 0 ? '  PREROTATING' : ''}`);
+    }
     if (cs) {
       lines.push(`MAP  ${paToInHg(pp.out.manifoldPressure).toFixed(1).padStart(5)} inHg`);
       lines.push(`PROP ${pp.out.governorRpm.toFixed(0).padStart(5)} rpm set`);
@@ -85,6 +91,12 @@ export class Hud {
     if (g.overstressed) warnings.push('OVER-STRESS (Bksp resets)');
     if (g.overspeed) warnings.push('** VNE **');
     else if (g.overspeedLatched) warnings.push('OVERSPEED RECORDED');
+    if (gyro) {
+      if (gyro.warnings.pushover) warnings.push('** PUSHOVER: POWER OFF, EASE BACK **');
+      else if (gyro.warnings.lowG) warnings.push('** LOW G **');
+      if (gyro.warnings.lowRotorRpm) warnings.push('** LOW ROTOR RPM **');
+      if (gyro.warnings.rotorOverspeed) warnings.push('ROTOR OVERSPEED');
+    }
     if (pp.out.fuelStarved) warnings.push('FUEL STARVED (negative g)');
     if (pp.running && pp.out.oilPressure < 0.3 && pp.rpm > 1.5 * ac.data.engine!.idleRpm) warnings.push('LOW OIL PRESSURE');
     if (ac.autoRudderEnabled) lines.push('AUTO-RUDDER');

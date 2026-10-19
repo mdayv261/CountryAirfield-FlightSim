@@ -245,6 +245,71 @@ export interface EngineData {
   driveEfficiency: number;
 }
 
+/**
+ * Gyroplane rotor: free-spinning, teetering, fixed blade pitch. Used by the blade-element /
+ * momentum autorotation model (physics/rotor.ts).
+ */
+export interface RotorData {
+  /** Rotor hub (teeter bolt), body axes, m. */
+  hubPosition_m: [number, number, number];
+  bladeChord_m: number;
+  /** Blade section lift slope, per radian. */
+  liftSlope: number;
+  /** Mean blade profile drag coefficient. */
+  profileDrag: number;
+  /** Fixed blade pitch (gyro blades have no collective), degrees. */
+  collectivePitch_deg: number;
+  /** Highest thrust coefficient over solidity before the blades stall. */
+  maxCTOverSolidity: number;
+  /** Rotor moment of inertia about the mast, kg m². */
+  inertia_kgm2: number;
+  /** Head (spindle) tilted back from the mast with the stick neutral, degrees. */
+  headNeutralPitch_deg: number;
+  /** Head tilt from full stick: forward, and left and right (±), degrees. */
+  headPitchRange_deg: number;
+  headRollRange_deg: number;
+  /** Head tilt from full back stick, degrees (more than forward, to load the rotor on take-off). */
+  headPitchBackRange_deg?: number;
+  /** Time the disc takes to follow the shaft when the airframe rotates (gives damping), s. */
+  flapLag_s: number;
+  /** Largest blowback (disc tilting back with speed), degrees. */
+  maxBlowback_deg: number;
+  /** Bearing friction torque, N m. */
+  bearingFriction_Nm: number;
+  /** Direction of rotation seen from above. */
+  rotation: 'clockwise' | 'anticlockwise';
+  /** Engine-driven prerotator: torque while engaged, and the rpm it cannot drive beyond. */
+  prerotator: { torque_Nm: number; maxRpm: number };
+}
+
+/** A tail surface treated as a small wing (gyroplanes). */
+export interface SurfaceData {
+  name: string;
+  /** Centre of pressure, body axes, m. */
+  position_m: [number, number, number];
+  /** 'yaw' = vertical fin (lift sideways); 'pitch' = horizontal tailplane (lift up). */
+  plane: 'yaw' | 'pitch';
+  area_m2: number;
+  aspectRatio: number;
+  /** Lift slope per radian, peak lift coefficient, and drag at zero lift. */
+  liftSlope: number;
+  CLmax: number;
+  CD0: number;
+  /** Rudder on this surface: lift coefficient per radian of deflection, and its throw. */
+  rudderPower?: number;
+  rudderMax_deg?: number;
+  /** Share of the propeller slipstream's extra dynamic pressure the surface sits in. */
+  slipstream?: number;
+}
+
+/** Airframe aerodynamics for aircraft without a wing: body drag and tail surfaces. */
+export interface AirframeAeroData {
+  /** Drag area (Cd x area) for head-on and side-on flow, m². */
+  dragArea_m2: number;
+  sideDragArea_m2: number;
+  surfaces: SurfaceData[];
+}
+
 export interface AircraftData {
   id: string;
   name: string;
@@ -255,6 +320,8 @@ export interface AircraftData {
   gear: GearData;
   inertia: Inertia;
   aero?: AeroData;
+  rotor?: RotorData;
+  airframeAero?: AirframeAeroData;
   propeller?: PropellerData;
   engine?: EngineData;
   limits: Limits;
@@ -396,6 +463,47 @@ export function validateAircraftData(raw: unknown): AircraftData {
     for (const k of ['elevatorMax_deg', 'aileronMax_deg', 'rudderMax_deg']) num(a, 'aero.', k, 1, 60);
     num(a, 'aero.', 'tailSlipstream', 0, 1);
     num(a, 'aero.', 'wingIncidence_deg', -5, 10, false);
+  }
+  if (raw.rotor !== undefined) {
+    const r = section('rotor');
+    const hub = r.hubPosition_m;
+    if (!Array.isArray(hub) || hub.length !== 3 || !hub.every((v) => typeof v === 'number'))
+      problems.push('rotor.hubPosition_m must be three numbers');
+    num(r, 'rotor.', 'bladeChord_m', 0.05, 1);
+    num(r, 'rotor.', 'liftSlope', 3, 7);
+    num(r, 'rotor.', 'profileDrag', 0.005, 0.05);
+    num(r, 'rotor.', 'collectivePitch_deg', -2, 10);
+    num(r, 'rotor.', 'maxCTOverSolidity', 0.05, 0.4);
+    num(r, 'rotor.', 'inertia_kgm2', 1, 1000);
+    num(r, 'rotor.', 'headNeutralPitch_deg', -10, 20);
+    num(r, 'rotor.', 'headPitchRange_deg', 1, 20);
+    num(r, 'rotor.', 'headRollRange_deg', 1, 20);
+    num(r, 'rotor.', 'headPitchBackRange_deg', 1, 30, false);
+    num(r, 'rotor.', 'flapLag_s', 0, 1);
+    num(r, 'rotor.', 'maxBlowback_deg', 0, 20);
+    num(r, 'rotor.', 'bearingFriction_Nm', 0, 50);
+    oneOf(r, 'rotor.', 'rotation', ['clockwise', 'anticlockwise']);
+    const pre = isObj(r.prerotator) ? r.prerotator : {};
+    num(pre, 'rotor.prerotator.', 'torque_Nm', 1, 1000);
+    num(pre, 'rotor.prerotator.', 'maxRpm', 10, 500);
+  }
+  if (raw.airframeAero !== undefined) {
+    const f = section('airframeAero');
+    num(f, 'airframeAero.', 'dragArea_m2', 0.01, 10);
+    num(f, 'airframeAero.', 'sideDragArea_m2', 0.01, 20);
+    if (!Array.isArray(f.surfaces)) problems.push('airframeAero.surfaces must be a list');
+    else
+      f.surfaces.forEach((s: unknown, i: number) => {
+        const path = `airframeAero.surfaces[${i}].`;
+        if (!isObj(s)) return void problems.push(`${path} must be an object`);
+        str(s, path, 'name');
+        oneOf(s, path, 'plane', ['yaw', 'pitch']);
+        for (const [k, lo, hi] of [['area_m2', 0.01, 20], ['aspectRatio', 0.3, 20], ['liftSlope', 1, 7], ['CLmax', 0.3, 2], ['CD0', 0, 0.5]] as const)
+          num(s, path, k, lo, hi);
+        num(s, path, 'rudderPower', 0, 7, false);
+        num(s, path, 'rudderMax_deg', 0, 45, false);
+        num(s, path, 'slipstream', 0, 1, false);
+      });
   }
   if (raw.propeller !== undefined) {
     const pr = section('propeller');

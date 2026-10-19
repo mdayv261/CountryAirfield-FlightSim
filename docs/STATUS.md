@@ -1,7 +1,7 @@
 # Project Status
 
-**Current stage:** 5 – Super Decathlon (complete; automated exit checks pass 2026-10-19; hand-flown aerobatics still to confirm)
-**Next stage:** 6 – Gyro (Bensen B-8M)
+**Current stage:** 6 – Gyro (complete; automated exit checks pass 2026-10-19; hand-flown gyro still to confirm)
+**Next stage:** 7 – Cockpits and views
 
 ## What works
 - Vite 8 + TypeScript 7 (strict) + Three.js r186 + Vitest 4. Scripts: `npm run dev`, `npm test`, `npm run build`, `npm run preview`, `npm run typecheck`.
@@ -26,6 +26,28 @@
   - Sky: gradient dome shader with a sun disc and glow (sun azimuth 25°, elevation 52°, northern sky), with matching horizon fog.
   - Altocumulus: rows of lumpy cloudlets (6 lobes each, instanced), 22 km square layer, every lobe between 3,000 and 4,500 m.
   - Sun shadows (2048 map) over an 800 m square around the airfield. Logarithmic depth buffer.
+- **Stage 6 Bensen B-8M gyroplane** (flyable; Tab cycles Air-Bike → Decathlon → gyro):
+  - `PoweredAircraft` base (airframe, gear, powerplant and prop effects, fuel, pilot controls, G monitor, auto-rudder)
+    with `FixedWingAircraft` (wing aero) and `Gyroplane` (rotor + tail surfaces) on top.
+  - `rotor.ts`: blade-element thrust C_T = (σa/2)[θ(1/3 + μ²/2) + λ/2] with momentum-theory induced flow (iterated),
+    autorotation torque C_Q = (σδ/8)(1 + μ²) − λC_T driving the rotor rpm, blade-stall cap, blowback flapping a1,
+    disc lag (pitch/roll damping), H-force, rotor ground effect (Cheeseman–Bennett), prerotator (140 N m to 330 rpm,
+    reacting on the airframe and loading the engine). Teetering rotor: no hub moment, so control vanishes at zero g.
+  - `liftingSurfaces.ts`: fin + rudder (in the slipstream) and a small tailplane as little wings at their positions;
+    open-frame body drag. Prop thrust line 0.18 m above the CG (power pushes the nose down).
+  - Stick tilts the rotor head (neutral 2.5° back, 12° forward, 20° back, ±7° roll); pedals = rudder + nosewheel;
+    Q (hold) or joystick thumb button = prerotator. Neutral stick trims about 40–50 kt.
+  - Warnings: LOW G (< 0.5 g airborne), PUSHOVER (< 0.3 g with power), LOW ROTOR RPM (< 200), ROTOR OVERSPEED (> 400).
+    HUD shows rotor rpm and PREROTATING.
+  - Procedural model: keel, mast, open seat and pilot, rudder bar, fuel tank, McCulloch and pusher prop, tricycle
+    gear, fin/rudder/tailplane, and a two-blade rotor that tilts with the disc axis and spins at the real rotor speed.
+  - Gyro tests (218 kg, ISA, calm): prerotation to 300 rpm in 21 s; take-off roll 31.0 m, lift-off 25 kt (target 30 m);
+    climb 1125 fpm at 45 kt (1100); cruise 55.2 kt at 45% power (56 kt = Bensen 65 mph); max level 79.6 kt (82);
+    idle autorotation at 40 kt steady at −835 fpm with rotor 389 rpm (±1.2); sharp pushover to −0.18 g triggers
+    LOW G, rotor decays 375 → 351 rpm, with power on the PUSHOVER warning and a harder nose-down pitch; recovers.
+  - Gear: static friction (anchored contacts) stops creep under steady side loads (a prerotator's torque, slopes).
+  - Input: button-bound channels (brakes, prerotator) still answer to their keys. Extreme 3D Pro defaults version 4.
+  - Browser: 75 fps (13.34 ms mean, p95 14.9 ms) with the gyro in flight; no console errors.
 - **Stage 5 Super Decathlon** (flyable; Tab switches aircraft):
   - New shared physics: constant-speed propeller (blade pitch scale s: CT = s·CT(J/s), CP = s²·CP(J/s)) with a
     rate-limited governor set by the rpm lever (2000–2700 rpm; on the fine stop it acts as fixed pitch);
@@ -129,7 +151,7 @@
 - Measured in Chrome on the Mac mini M4 (2560x1440 display at 75 Hz): 75 fps, mean frame 13.34 ms,
   p95 13.6 ms, max 14.4 ms over 300 frames, so no dropped frames. The browser locks to the display's 75 Hz refresh.
   Physics holds 120 Hz. P pauses (physics 0 Hz, render continues) and resumes cleanly. No console errors.
-- Tests: 163 passing (Stage 5 added Decathlon performance, aerobatics, propeller-effects suites; engine response, pitch-attitude check, auto-rudder and the joystick profile added since; Stage 4 added aero, powerplant and Air-Bike performance/circuit suites; Stage 3 added rigid body, atmosphere, wind, gear and input suites). Highlights: free fall matches ½gt²;
+- Tests: 182 passing (Stage 6 added rotor, gyro performance and static-friction tests; Stage 5 added Decathlon performance, aerobatics, propeller-effects suites; engine response, pitch-attitude check, auto-rudder and the joystick profile added since; Stage 4 added aero, powerplant and Air-Bike performance/circuit suites; Stage 3 added rigid body, atmosphere, wind, gear and input suites). Highlights: free fall matches ½gt²;
   a torque-free tumble (with the intermediate-axis flip) conserves energy to 1e-6; an undamped strut bounce returns to its
   release height within 1%; all three aircraft settle at rest on their wheels (loads sum to weight, struts compress by load/k,
   taildraggers 8–13° nose-up); braking stops in v²/(2μg) on gravel and grass; rolling coast distance follows the rolling
@@ -154,6 +176,10 @@
 - Body axes are three.js-style (x right, y up, z aft) rather than the aero convention (x forward, y right, z down),
   so models and physics share one frame. Aero code in Stages 4–6 must use alpha = atan2(−v_y, −v_z) and beta from v_x.
 - Reported wind is the 10 m wind; aloft it is up to 1.6× stronger (shear). The windsock at about 10 m reads the reported value.
+- Gyro cruise (decided 2026-10-19): Bensen's 65 mph (56 kt) is level flight at about 45% power; full power gives the
+  82 kt maximum. At 75% power the same airframe would cruise near 75 kt.
+- Gyro take-off: the CLAUDE.md 30 m roll needs prerotation near flight rpm (330 rpm prerotator), about 150 kgf static
+  thrust, rotor ground effect and generous back stick (20°). Jane's quotes ~91 m for a stock B-8M.
 - Pitch-attitude targets (0° / +10° / −10°) are pilot-flown attitudes (level 75% throttle, Vy climb, 45 kt idle descent),
   not hands-off; decided 2026-10-19.
 - Grass runway "30 m east" means the centrelines are 30 m apart (confirmed by user 2026-10-19), leaving 6 m of grass between the edges.
@@ -167,6 +193,9 @@
   fuel 151 L is usable (163 L total); gyro empty 113.4 kg (250 lb), max 249.5 kg (550 lb).
 
 ## Known issues / open questions
+- Gyro hands-off at idle trims slow (about 20 kt, −870 fpm); fly the approach at 40–45 kt.
+- Gyro rotor overspeeds (> 400 rpm) in a near-vertical slow descent; the warning shows it. Keep some airspeed.
+- The gyro needs right stick and rudder at full power (direct-drive prop torque ~113 N m rolls it left).
 - Decathlon spin is a little fast and steep compared with the real aircraft (speed builds to ~60 kt). Revisit in Stage 8.
 - Decathlon hands-off take-off (stick neutral) lifts off late (~85 kt): neutral stick trims near 90 kt. There is no
   pitch trim control yet; consider adding trim in Stage 7/9.
@@ -193,5 +222,7 @@
 - Clouds are not fogged and stop at the layer edge (11 km out), so at high altitude the edge of the layer can be seen.
 
 ## Next step
-Confirm by hand in the Decathlon (Tab): loop, aileron roll, stall turn and spin recovery. Then Stage 6: Bensen B-8M gyro
-(rotor autorotation, prerotator, tilting rotor head, thrust-line offset, low-g/pushover warning, tricycle ground handling).
+Confirm by hand in the gyro (Tab twice): hold Q (or thumb button) to prerotate to ~330 rpm, full power, back stick,
+lift off, climb, cruise, idle descent, and a gentle pushover to see the LOW G warning. Then Stage 7: cockpits and views
+(per-aircraft panels: ASI, altimeter, VSI, compass, tachos incl. rotor rpm, slip ball, EGT/CHT, fuel; MAP, G-meter;
+HUD option; chase, cockpit and tower views).

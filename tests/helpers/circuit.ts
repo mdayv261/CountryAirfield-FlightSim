@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { ktToMps, mpsToKt } from '../../src/core/units';
-import type { FixedWingAircraft } from '../../src/physics/FixedWingAircraft';
+import type { PoweredAircraft } from '../../src/physics/PoweredAircraft';
 import { surfaceAt, type SurfaceType } from '../../src/physics/surfaces';
 import type { PhysicsWorld } from '../../src/physics/PhysicsWorld';
 import { attitude, dt, fly, Pid, TestPilot } from './testPilot';
@@ -60,7 +60,7 @@ export interface CircuitResult {
  * power to hold the glide path and pitch to hold speed, flare over the threshold, then a
  * three-point touchdown and roll-out with the stick held back.
  */
-export function flyCircuit(world: PhysicsWorld, ac: FixedWingAircraft, rw: RunwayEnd, s: CircuitSpeeds): CircuitResult {
+export function flyCircuit(world: PhysicsWorld, ac: PoweredAircraft, rw: RunwayEnd, s: CircuitSpeeds): CircuitResult {
   const pilot = new TestPilot(ac);
   const north = rw.dir; // +1: heading north is "upwind"
   const runwayHeading = rw.dir === 1 ? 0 : Math.PI;

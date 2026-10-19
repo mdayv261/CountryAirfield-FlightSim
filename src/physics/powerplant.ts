@@ -36,6 +36,8 @@ export interface PowerplantInputs {
   /** Load factor on the airframe (g), for fuel and oil feed. */
   loadFactor?: number;
   fuelAvailable?: boolean;
+  /** Extra power drawn from the crankshaft by accessories (a rotor prerotator), W. */
+  accessoryPower?: number;
 }
 
 export interface PowerplantOutput {
@@ -230,7 +232,11 @@ export class Powerplant {
     const indicated = firing ? opening * ((this.fullThrottlePower(rpm) * lapse) / omega + frictionTorque) : 0;
     // Friction always opposes rotation; it is capped so it can stop the shaft but not reverse it.
     const friction = Math.min(frictionTorque, (this.omega * this.inertia) / dt + indicated);
-    const engineTorque = indicated - friction;
+    // Accessories (a prerotator drive) take their power straight off the crankshaft. Their
+    // clutch slips rather than stall the engine, so the load torque is worked out at no less
+    // than idle speed.
+    const accessoryTorque = (inp.accessoryPower ?? 0) / Math.max(omega, e.idleRpm / RPM_PER_RAD_S);
+    const engineTorque = indicated - friction - accessoryTorque;
 
     const governorRpm = this.governor(dt, inp.propLever ?? 1);
 

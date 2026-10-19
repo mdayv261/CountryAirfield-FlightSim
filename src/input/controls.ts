@@ -5,9 +5,10 @@
 //   pitch  +1 = stick fully back (nose up),      -1 = fully forward
 //   roll   +1 = stick fully right (right wing down)
 //   yaw    +1 = full right pedal (nose right)
-//   throttle 0..1, brakeLeft/brakeRight 0..1, propLever 0 (coarse/low rpm)..1 (fine/high rpm)
+//   throttle 0..1, brakeLeft/brakeRight 0..1, propLever 0 (coarse/low rpm)..1 (fine/high rpm),
+//   prerotator 0 (released)..1 (engaged; gyroplanes)
 
-export const CHANNELS = ['pitch', 'roll', 'yaw', 'throttle', 'brakeLeft', 'brakeRight', 'propLever'] as const;
+export const CHANNELS = ['pitch', 'roll', 'yaw', 'throttle', 'brakeLeft', 'brakeRight', 'propLever', 'prerotator'] as const;
 export type Channel = (typeof CHANNELS)[number];
 export type ControlState = Record<Channel, number>;
 
@@ -20,6 +21,7 @@ export const BIPOLAR: Record<Channel, boolean> = {
   brakeLeft: false,
   brakeRight: false,
   propLever: false,
+  prerotator: false,
 };
 
 export const CHANNEL_LABELS: Record<Channel, string> = {
@@ -30,8 +32,9 @@ export const CHANNEL_LABELS: Record<Channel, string> = {
   brakeLeft: 'Left toe brake',
   brakeRight: 'Right toe brake',
   propLever: 'Propeller rpm lever',
+  prerotator: 'Rotor prerotator (hold)',
 };
 
 export function neutralControls(): ControlState {
-  return { pitch: 0, roll: 0, yaw: 0, throttle: 0, brakeLeft: 0, brakeRight: 0, propLever: 1 };
+  return { pitch: 0, roll: 0, yaw: 0, throttle: 0, brakeLeft: 0, brakeRight: 0, propLever: 1, prerotator: 0 };
 }
