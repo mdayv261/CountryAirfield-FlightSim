@@ -37,7 +37,7 @@
     in the cockpit view, 4 Hz otherwise). Layout and scales per aircraft in each JSON's `panel` block (knots, °C, rpm):
     Layout (user, 2026-10-20): flight instruments across the top with the ASI centred, ALT left and VSI right (Decathlon:
     G-meter, AI, ALT, ASI, VSI, DG); below, the slip ball under the ASI, compass to its left, engine gauges to its
-    right (Air-Bike RPM, fuel, EGT, CHT; gyro RPM, rotor rpm LCD readout, fuel, EGT, CHT; Decathlon RPM, MAP, fuel,
+    right (Air-Bike RPM (ASI size) and fuel, with EGT left of the compass and CHT above it, pod 0.31 m wide; gyro RPM, rotor rpm LCD readout, fuel, EGT, CHT; Decathlon RPM, MAP, fuel,
     CHT). The gyro's rotor tacho is a digital LCD (digits turn red outside 200–400 rpm). Open-cockpit pods stand on a post.
   - Engine temperatures (`src/physics/engineTemps.ts`): CHT settles where combustion heat (∝ charge flow, manifold
     pressure x rpm) balances fin cooling (∝ cooling-air speed^0.5, airspeed plus part of the slipstream), with a

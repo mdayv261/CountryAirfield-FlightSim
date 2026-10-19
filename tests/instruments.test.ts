@@ -152,12 +152,20 @@ describe('gauges agree with the HUD', () => {
       expect(slip[0]).toBe(0);
       expect(slip[1]).toBeLessThan(asi[1]);
       expect(at('compass')[0]).toBeLessThan(0);
+      // Air-Bike (user, 2026-10-20): EGT left of the compass with CHT above it, top row.
+      const leftColumn = ac.id === 'airbike103' ? ['egt', 'cht'] : [];
       for (const g of gs)
-        if (!flight.includes(g.kind) && g.kind !== 'slip' && g.kind !== 'compass') {
+        if (!flight.includes(g.kind) && !leftColumn.includes(g.kind) && g.kind !== 'slip' && g.kind !== 'compass') {
           expect(g.at_m[0], `${ac.id} ${g.kind}`).toBeGreaterThan(0);
           expect(g.at_m[1], `${ac.id} ${g.kind}`).toBeLessThan(asi[1]);
         }
     }
+    const bike = (k: string) => AIRCRAFT.airbike103.panel!.gauges.find((g) => g.kind === k)!;
+    expect(bike('egt').at_m[0]).toBeLessThan(bike('compass').at_m[0]);
+    expect(bike('egt').at_m[1]).toBe(bike('compass').at_m[1]);
+    expect(bike('cht').at_m[0]).toBe(bike('egt').at_m[0]);
+    expect(bike('cht').at_m[1]).toBe(bike('asi').at_m[1]);
+    expect(bike('tacho').diameter_m).toBe(bike('asi').diameter_m);
     expect(AIRCRAFT.bensenB8M.panel!.gauges.find((g) => g.kind === 'rotorTacho')!.style).toBe('lcd');
     expect(lcdText(362.6)).toBe('363');
   });

@@ -154,12 +154,21 @@
   },
   "panel": {
     "position_m": [0, 0.1, -0.75],
-    "size_m": [0.5, 0.15],
+    "size_m": [0.31, 0.15],
     "tilt_deg": 20,
     "colour": "#2b2b2b",
     "lookDown_deg": 10,
     "postTo_m": [0, -0.55, -0.85],
     "gauges": [
+      {
+        "kind": "cht",
+        "at_m": [-0.13, 0.035],
+        "diameter_m": 0.048,
+        "min": 50,
+        "max": 300,
+        "green": [120, 230],
+        "redline": 250
+      },
       {
         "kind": "altimeter",
         "at_m": [-0.07, 0.035],
@@ -181,6 +190,15 @@
         "max": 1000
       },
       {
+        "kind": "egt",
+        "at_m": [-0.13, -0.04],
+        "diameter_m": 0.048,
+        "min": 200,
+        "max": 800,
+        "green": [480, 640],
+        "redline": 650
+      },
+      {
         "kind": "compass",
         "at_m": [-0.07, -0.04],
         "diameter_m": 0.05
@@ -193,34 +211,16 @@
       {
         "kind": "tacho",
         "at_m": [0.06, -0.04],
-        "diameter_m": 0.048,
+        "diameter_m": 0.064,
         "max": 8000,
         "green": [2500, 6500],
         "redline": 6500
       },
       {
         "kind": "fuel",
-        "at_m": [0.113, -0.04],
+        "at_m": [0.118, -0.04],
         "diameter_m": 0.048,
         "max": 19
-      },
-      {
-        "kind": "egt",
-        "at_m": [0.166, -0.04],
-        "diameter_m": 0.048,
-        "min": 200,
-        "max": 800,
-        "green": [480, 640],
-        "redline": 650
-      },
-      {
-        "kind": "cht",
-        "at_m": [0.219, -0.04],
-        "diameter_m": 0.048,
-        "min": 50,
-        "max": 300,
-        "green": [120, 230],
-        "redline": 250
       }
     ]
   },
