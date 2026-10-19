@@ -18,8 +18,8 @@ Daylight only, blue sky, altocumulus clouds. Moderate-realism 6-DOF physics.
 
 \#\# Aircraft targets (tune to within \+/-10%)  
 Gyrocopter (Bensen B8M, McCulloch 4318 engine 65 hp, pusher):  
-  rotor 6.15 m 2-blade, empty 115 kg, max 250 kg, fuel 20 L, cruise 65 kts,  
-  max 95 kts, climb 1100 fpm, take-off roll 30 m with prerotation, tricycle gear.  
+  rotor 6.15 m 2-blade, empty 115 kg, max 250 kg, fuel 20 L, cruise 56 kts,  
+  max 82 kts, climb 1100 fpm, take-off roll 30 m with prerotation, tricycle gear.  
 Air-Bike 103 (Hirth F-33 28 hp at 6500 rpm, belt reduction, tractor):  
   span 8.15 m, area 11.1 m2, chord 54 in, empty 112 kg, max 227 kg (assumed),  
   fuel 19 L, stall 24 kts, cruise 47 kts, Vne 69 kts, climb 475 fpm,  

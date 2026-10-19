@@ -60,8 +60,8 @@ describe('aircraft data files', () => {
     close(a.propulsion.ratedPowerW, hpToW(65));
     expect(a.geometry).toMatchObject({ rotorDiameter_m: 6.15, rotorBlades: 2 });
     expect(a.mass).toMatchObject({ emptyKg: 115, maxKg: 250, fuelCapacityL: 20 });
-    close(a.targets.cruise_mps, ktToMps(65));
-    close(a.targets.maxSpeed_mps, ktToMps(95));
+    close(a.targets.cruise_mps, ktToMps(56));
+    close(a.targets.maxSpeed_mps, ktToMps(82));
     close(a.targets.climb_mps, fpmToMps(1100));
     expect(a.targets.takeoffRoll_m).toBe(30);
     expect(a.limits).toMatchObject({ rotorRpmMin: 200, rotorRpmMax: 400 });
