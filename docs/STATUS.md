@@ -1,6 +1,6 @@
 # Project Status
 
-**Current stage:** 9 – Sound and menus (complete; exit checks pass 2026-10-20). Stage 8 flight notes: none yet (docs/FLIGHT_NOTES.md).
+**Current stage:** 9 – Sound and menus (complete; exit checks pass 2026-10-20). Stage 8 flight notes deferred by the user (2026-10-20): to be added to docs/FLIGHT_NOTES.md later and resolved then.
 **Next stage:** 10 (awaiting the brief)
 
 ## What works
@@ -329,5 +329,5 @@
 - Clouds are not fogged and stop at the layer edge (11 km out), so at high altitude the edge of the layer can be seen.
 
 ## Next step
-Try the menu (Esc) and listen to each aircraft (sound starts on the first key press or click). Stage 8 stays open for
-your flight notes in docs/FLIGHT_NOTES.md. Then Stage 10 when the brief arrives.
+Try the menu (Esc) and listen to each aircraft (sound starts on the first key press or click). Stage 8's flight notes are
+deferred: when you add notes to docs/FLIGHT_NOTES.md, each will be resolved there. Then Stage 10 when the brief arrives.
