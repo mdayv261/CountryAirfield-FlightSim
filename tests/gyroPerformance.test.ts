@@ -206,6 +206,26 @@ describe('Bensen B-8M performance', () => {
     expect(full).toBeLessThan(75);
   }, LONG);
 
+  it('centring the stick in a 30° bank lets it ease back level gently, not snap level (user report 2026-10-20)', () => {
+    const { world, gy } = gyroInFlight(800, 53);
+    gy.pilot.throttle = 0.55;
+    fly(world, 60, () => {});
+    const deg = 180 / Math.PI;
+    // Roll into about 30° of bank with 30 % stick, then let the stick go.
+    fly(world, 2, () => void (gy.pilot.aileron = 0.3));
+    const bank0 = attitude(gy).bank * deg;
+    let maxBackRate = 0;
+    fly(world, 20, () => {
+      gy.pilot.aileron = 0;
+      maxBackRate = Math.max(maxBackRate, gy.body.angularVelocity.z * deg); // rolling left (back towards level)
+    });
+    const bank20 = attitude(gy).bank * deg;
+    console.info(`stick centred at ${bank0.toFixed(0)}° bank: rolls back at most ${maxBackRate.toFixed(1)}°/s, ${bank20.toFixed(1)}° after 20 s`);
+    expect(bank0).toBeGreaterThan(25);
+    expect(maxBackRate).toBeLessThan(12); // was ~50°/s: a snap that whipped the cockpit view round
+    expect(Math.abs(bank20)).toBeLessThan(5); // but it does come back level hands-off
+  }, LONG);
+
   it(`reaches ${T.maxKt.toFixed(0)} kt flat out in level flight`, () => {
     const { world, gy } = gyroInFlight(300, 70);
     const pilot = new TestPilot(gy);

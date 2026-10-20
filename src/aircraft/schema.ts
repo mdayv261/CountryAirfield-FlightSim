@@ -299,10 +299,16 @@ export interface RotorData {
   /**
    * Stick-free roll stability (hands-off trim, as on modern gyros): with the stick released
    * sideways, the head leans against any bank by this many degrees per degree of bank, plus
-   * stickFreeRollDamping_s seconds of roll rate. Fades out as the pilot moves the stick.
+   * stickFreeRollDamping_s seconds of roll rate. It builds up over stickFreeRollEngage_s once
+   * the stick is centred, its head tilt is capped at stickFreeRollMaxTilt_deg (a gentle
+   * recovery, not a snap), and any stick input switches it off.
    */
   stickFreeRollGain?: number;
   stickFreeRollDamping_s?: number;
+  stickFreeRollEngage_s?: number;
+  stickFreeRollMaxTilt_deg?: number;
+  /** Fastest it rolls back towards level hands-off, degrees per second. */
+  stickFreeRollMaxRate_dps?: number;
   /** Largest blowback (disc tilting back with speed), degrees. */
   maxBlowback_deg: number;
   /** Bearing friction torque, N m. */
@@ -566,6 +572,9 @@ export function validateAircraftData(raw: unknown): AircraftData {
     num(r, 'rotor.', 'headPitchBackRange_deg', 1, 30, false);
     num(r, 'rotor.', 'stickFreeRollGain', 0, 2, false);
     num(r, 'rotor.', 'stickFreeRollDamping_s', 0, 1, false);
+    num(r, 'rotor.', 'stickFreeRollEngage_s', 0, 10, false);
+    num(r, 'rotor.', 'stickFreeRollMaxTilt_deg', 0.1, 10, false);
+    num(r, 'rotor.', 'stickFreeRollMaxRate_dps', 1, 90, false);
     num(r, 'rotor.', 'maxBlowback_deg', 0, 20);
     num(r, 'rotor.', 'bearingFriction_Nm', 0, 50);
     oneOf(r, 'rotor.', 'rotation', ['clockwise', 'anticlockwise']);

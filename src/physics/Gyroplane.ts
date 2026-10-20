@@ -10,8 +10,13 @@ const LOW_G = 0.5;
 const PUSHOVER_THROTTLE = 0.4;
 const PUSHOVER_G = 0.3;
 
-/** Lateral stick deflection beyond which the pilot is flying it and stick-free stability has faded out. */
-const STICK_FREE_BAND = 0.15;
+/**
+ * Lateral stick counts as centred (released) below this deflection: about a joystick's dead
+ * zone. Any more and the pilot is flying it, and stick-free stability lets go at once.
+ */
+const STICK_CENTRED = 0.05;
+/** Head tilt per unit of roll rate beyond the stick-free recovery-rate limit, s. */
+const STICK_FREE_RATE_DAMPING_S = 1.0;
 
 /** The prerotator clutch starts to bite this far above the engine's stall rpm (fraction of stall rpm). */
 const PREROTATOR_BITE_FRACTION = 1.15;
@@ -44,6 +49,8 @@ export class Gyroplane extends PoweredAircraft {
   private readonly finArm: number;
   private readonly tmpRight = new THREE.Vector3();
   private readonly tmpUp = new THREE.Vector3();
+  /** How far stick-free roll stability has built up since the stick was centred, 0..1. */
+  private stickFreeEngaged = 0;
 
   constructor(data: AircraftData, fuelFraction = 1) {
     super(data, fuelFraction);
@@ -63,7 +70,7 @@ export class Gyroplane extends PoweredAircraft {
       omegaBody: b.angularVelocity,
       density: c.density,
       stickPitch: p.elevator,
-      stickRoll: p.aileron + this.stickFreeRoll(),
+      stickRoll: p.aileron + this.stickFreeRoll(c.dt),
       prerotator: p.prerotator * this.prerotatorEngagement(),
       engineRunning: this.powerplant.running,
       hubHeight: c.heightAgl + this.data.rotor!.hubPosition_m[1],
@@ -105,15 +112,25 @@ export class Gyroplane extends PoweredAircraft {
    * rotor's natural roll-restoring tendency) tiny. Modern gyros are trimmed and rigged to fly
    * hands-off; we model the result: with the stick released sideways, the head floats so as to
    * keep the rotor disc level (and resists roll rate, for damping). The airframe hangs beneath
-   * with a slight list that balances the propeller's torque, and the gyro flies straight. As the
-   * pilot moves the stick it fades out, so deliberate inputs feel unchanged. Not on the ground.
+   * with a slight list that balances the propeller's torque, and the gyro flies straight.
+   *
+   * It behaves like a stable aircraft's natural recovery, not an autopilot: it only acts once
+   * the stick has been centred, building up over stickFreeRollEngage_s (so centring the stick
+   * after a turn does not snap the wings level), and its correction is capped at
+   * stickFreeRollMaxTilt_deg of head tilt and its roll back towards level at
+   * stickFreeRollMaxRate_dps, so it rolls level at a gentle few degrees per second. Near level its full strength trims out the propeller torque. Any stick input
+   * switches it off at once, so the pilot's inputs are never fought. Not on the ground.
    */
-  private stickFreeRoll(): number {
+  private stickFreeRoll(dt: number): number {
     const r = this.data.rotor!;
     const gain = r.stickFreeRollGain ?? 0;
-    if (gain === 0 || this.gear.states.some((s) => s.inContact)) return 0;
-    const free = Math.max(0, 1 - Math.abs(this.pilot.aileron) / STICK_FREE_BAND);
-    if (free === 0) return 0;
+    const onGround = this.gear.states.some((s) => s.inContact);
+    if (gain === 0 || onGround || Math.abs(this.pilot.aileron) >= STICK_CENTRED) {
+      this.stickFreeEngaged = 0;
+      return 0;
+    }
+    const ramp = r.stickFreeRollEngage_s ?? 0;
+    this.stickFreeEngaged = ramp > 0 ? Math.min(1, this.stickFreeEngaged + dt / ramp) : 1;
     // Bank of the rotor disc: its axis's lean towards the body's right, in the horizontal plane.
     const disc = this.body.toWorld(this.tmpUp.copy(this.rotor.discAxis));
     const right = this.body.toWorld(this.tmpRight.set(1, 0, 0));
@@ -121,8 +138,16 @@ export class Gyroplane extends PoweredAircraft {
     right.normalize();
     const discBank = Math.atan2(disc.dot(right), disc.y);
     const p = -this.body.angularVelocity.z;
-    const tilt = -gain * discBank - (r.stickFreeRollDamping_s ?? 0) * p; // rad of head roll
-    return (free * tilt) / ((r.headRollRange_deg * Math.PI) / 180);
+    const maxTilt = ((r.stickFreeRollMaxTilt_deg ?? r.headRollRange_deg) * Math.PI) / 180;
+    let tilt = Math.max(-maxTilt, Math.min(maxTilt, -gain * discBank - (r.stickFreeRollDamping_s ?? 0) * p)); // rad of head roll
+    // Recovery-rate limit: once rolling back towards level faster than the limit, the head
+    // eases off in proportion (extra damping on the excess only), so the wings come up gently.
+    const maxRate = ((r.stickFreeRollMaxRate_dps ?? Infinity) * Math.PI) / 180;
+    const excess = Math.abs(p) - maxRate;
+    if (excess > 0 && Math.sign(p) === -Math.sign(discBank)) {
+      tilt = Math.max(-maxTilt, Math.min(maxTilt, tilt - Math.sign(p) * excess * STICK_FREE_RATE_DAMPING_S));
+    }
+    return (this.stickFreeEngaged * tilt) / ((r.headRollRange_deg * Math.PI) / 180);
   }
 
   /** The prerotator's drive takes its power from the engine. */
@@ -136,6 +161,7 @@ export class Gyroplane extends PoweredAircraft {
 
   override resetOnGround(x: number, z: number, headingDeg: number, groundY: number): void {
     super.resetOnGround(x, z, headingDeg, groundY);
+    this.stickFreeEngaged = 0;
     this.rotor.stop();
     Object.assign(this.warnings, { lowG: false, pushover: false, lowRotorRpm: false, rotorOverspeed: false });
   }

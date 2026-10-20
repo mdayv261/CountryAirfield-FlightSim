@@ -89,6 +89,11 @@
     the stock B-8M was spirally neutral). Levelling the disc, not the keel, keeps it flying straight; the keel hangs
     about 1° left wing low. Power sets the pitch: hands-off at 45% power it holds 53 kt level, full power climbs
     ~700 fpm nose up, idle descends ~730 fpm nose down.
+  - Stick-free levelling revised (2026-10-20, user: banking felt more aggressive in the cockpit view than the chase
+    view). Cause: centring the stick in a bank snapped the gyro level at ~50°/s, which the chase camera (it does not
+    roll) hid and the cockpit camera showed in full. Now it engages only once the stick is centred (inside the 5 %
+    dead zone), builds up over 2 s, caps its head tilt at 2.5° and rolls back at no more than 8°/s: a 30° bank
+    eases level in about 4 s. Any stick input switches it off. Hands-off trim unchanged.
   - Roll response (2026-10-20): about 14°/s at quarter stick, 28°/s at half, 56°/s at full, proportional. (Was
     ~165°/s at full stick with a guessed 0.04 s disc lag.) Controls soften as rotor rpm falls.
   - Brakes (2026-10-19): toe brakes on all three wheels (B key / trigger). They hold the gyro still while prerotating

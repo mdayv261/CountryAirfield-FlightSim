@@ -86,6 +86,9 @@
     "headPitchBackRange_deg": 20,
     "stickFreeRollGain": 1.0,
     "stickFreeRollDamping_s": 0.2,
+    "stickFreeRollEngage_s": 2,
+    "stickFreeRollMaxTilt_deg": 2.5,
+    "stickFreeRollMaxRate_dps": 8,
     "headRollRange_deg": 7,
     "maxBlowback_deg": 8,
     "bearingFriction_Nm": 2,
@@ -270,7 +273,7 @@
     "Airframe: open frame with pilot, drag area 0.6 m2 (sets the 82 kt top speed); fin and rudder (0.45 m2) in the slipstream; small tailplane (0.15 m2, assumed: the stock B-8M had none; this small one keeps pitch lively, so a sharp pushover really does unload the rotor).",
     "Cruise (decided 2026-10-19): the Bensen 65 mph (56 kt) cruise is level flight at about 45% power (~3,500 rpm); full power gives the 82 kt maximum.",
     "Engine: McCulloch 4318, 65 hp at 4100 rpm, two-stroke flat four, direct drive (assumed); bsfc 0.5 kg/kWh.",
-    "Hands-off trim (user request 2026-10-19): head rigged 0.95 deg back and 1.6 deg right (cancels propeller torque at cruise power), fin offset 0.5 deg (cancels propeller yaw), plus stick-free roll stability that keeps the rotor disc level when the stick is released sideways (modern-gyro behaviour; the stock B-8M was spirally neutral). Hands-off at 45% power it flies straight and level at 53 kt with about a 1 deg left-wing-low list; power changes climb or descend.",
+    "Hands-off trim (user request 2026-10-19): head rigged 0.95 deg back and 1.6 deg right (cancels propeller torque at cruise power), fin offset 0.5 deg (cancels propeller yaw), plus stick-free roll stability that keeps the rotor disc level when the stick is released sideways (modern-gyro behaviour; the stock B-8M was spirally neutral). Hands-off at 45% power it flies straight and level at 53 kt with about a 1 deg left-wing-low list; power changes climb or descend. Revised 2026-10-20 (user: banking felt more aggressive in the cockpit view): the levelling builds up over 2 s once the stick is centred, its head tilt is capped at 2.5 deg and it rolls back at no more than 8 deg/s, so centring the stick after a turn eases the gyro level in about 4 s instead of snapping it back at ~50 deg/s.",
     "Roll and pitch damping (2026-10-20, user: roll too aggressive): the disc lag is the blade flapping time constant 16/(Lock number x rotor speed), Lock number about 3.7 from the blade data (rotor inertia 60 kg m2 over 2 blades), about 0.11 s at 370 rpm. The earlier fixed 0.04 s gave ~165 deg/s at full stick; now about 60 deg/s.",
     "Brakes on all three wheels (user request 2026-10-19; assumed, the stock B-8M had none): main brakes alone (about 60% of the weight) slipped above ~2,800 engine rpm; with the nosewheel braked too the gyro holds still while prerotating at ~2,800 rpm on gravel and ~2,500 rpm on grass.",
     "Panel (Stage 7): instrument pod on the keel ahead of the stick. Gauge markings assumed: ASI red line 82 kt; McCulloch red line 4,100 rpm; rotor 200-400 rpm green; CHT limit 260 C, EGT limit 680 C (assumed). Air-cooled engine: CHT and EGT in place of the stage brief's coolant gauge (that was for a Subaru)."

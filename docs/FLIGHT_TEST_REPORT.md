@@ -18,11 +18,11 @@ Speeds are indicated unless marked TAS. "info" rows have no CLAUDE.md target and
 | Super Decathlon 8KCAB | Vx (best angle) | 50.0 kt | 46.0 kt | -8.0 % | PASS | speed of best climb gradient |
 | Super Decathlon 8KCAB | Take-off roll | 177 m | 177 m | -0.0 % | PASS | three-point, full power, gravel |
 | Super Decathlon 8KCAB | Landing roll | 152 m | 156 m | 2.7 % | PASS | 500 ft circuit, three-point, brakes |
-| Bensen B-8M Gyrocopter | Cruise | 56.0 kt | 55.4 kt | -1.1 % | PASS | level at 45 % power, 984 ft |
+| Bensen B-8M Gyrocopter | Cruise | 56.0 kt | 55.3 kt | -1.2 % | PASS | level at 45 % power, 984 ft |
 | Bensen B-8M Gyrocopter | Climb rate | 1100 fpm | 1136 fpm | 3.3 % | PASS | full power, best of 35–55 kt |
 | Bensen B-8M Gyrocopter | Max level speed | 82.0 kt | 79.6 kt | -2.9 % | PASS | full power, 1,000 ft |
 | Bensen B-8M Gyrocopter | Take-off roll | 30 m | 30 m | 1.3 % | PASS | prerotated to ~330 rpm, gravel |
-| Bensen B-8M Gyrocopter | Landing roll | — | 27 m | — | info | power-off flare, stick back, half brakes |
+| Bensen B-8M Gyrocopter | Landing roll | — | 30 m | — | info | power-off flare, stick back, half brakes |
 
 Accepted deviations:
 1. Air-Bike 103 landing roll: accepted 2026-10-19, reconfirmed 2026-10-20: no brakes, so only drag, rolling resistance and the windmilling prop slow it (0.06–0.08 g); 61 m from a 26 kt touchdown would need about 0.14 g. About 110 m on grass, 160 m on gravel.

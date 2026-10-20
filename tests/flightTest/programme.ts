@@ -246,6 +246,9 @@ export function landingGyro(wind?: WindModel): GyroLanding {
       ac.pilot.elevator = 1;
       ac.pilot.brakeLeft = ac.pilot.brakeRight = 0.5;
       pilot.steerOnGround(-Math.max(-0.15, Math.min(0.15, 0.03 * (ac.body.position.x - RUNWAYS.gravel.cx))));
+      // Stick into wind while the rotor runs down, so the crosswind cannot tip the disc and
+      // push the gyro sideways (as on the take-off roll).
+      ac.pilot.aileron = Math.max(-1, Math.min(1, -0.25 * ac.body.velocity.x - 0.05 * (ac.body.position.x - RUNWAYS.gravel.cx)));
       res.maxRolloutOffset = Math.max(res.maxRolloutOffset, Math.abs(ac.body.position.x - RUNWAYS.gravel.cx));
       if (ac.body.velocity.length() < 0.3) {
         res.roll = zTouch - ac.body.position.z;
