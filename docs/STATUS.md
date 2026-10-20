@@ -26,7 +26,9 @@
   - Sky: gradient dome shader with a sun disc and glow (sun azimuth 25°, elevation 52°, northern sky), with matching horizon fog.
   - Altocumulus: rows of lumpy cloudlets (6 lobes each, instanced), 22 km square layer, every lobe between 3,000 and 4,500 m.
   - Sun shadows (2048 map) over an 800 m square around the airfield. Logarithmic depth buffer.
-- **Published** (2026-10-20): https://mdayv261.github.io/ from the public repository github.com/mdayv261/mdayv261.github.io.
+- **Published** (2026-10-20): https://mdayv261.github.io/CountryAirfield-FlightSim/ from the public repository
+  github.com/mdayv261/CountryAirfield-FlightSim (renamed from mdayv261.github.io so it sits in its own folder, like
+  WW1-DawnPatrol). https://mdayv261.github.io/ is a home page linking both games (repository mdayv261.github.io).
   GitHub Actions (`.github/workflows/deploy.yml`) runs the tests, builds and deploys on every push to main. Before the
   first upload, the history was rewritten to author "mdayv261" with the GitHub no-reply email and personal details
   were redacted (backup of the original history: ../country-flight-sim-backup-before-publish.bundle).

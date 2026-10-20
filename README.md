@@ -10,7 +10,7 @@ aircraft, each with its own 6-degree-of-freedom flight model tuned to published 
 Everything is built in code: the low-poly scenery and aircraft are procedural, and the engine,
 wind and rotor sounds are synthesised live. No models, textures or audio files are loaded.
 
-**Play it online: <https://mdayv261.github.io/>** (desktop browser; keyboard, mouse or joystick).
+**Play it online: <https://mdayv261.github.io/CountryAirfield-FlightSim/>** (desktop browser; keyboard, mouse or joystick).
 
 See [docs/PILOT_GUIDE.md](docs/PILOT_GUIDE.md) for the controls and how to fly each aircraft.
 
