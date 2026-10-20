@@ -212,7 +212,10 @@ describe('Bensen B-8M performance', () => {
     fly(world, 60, () => {});
     const deg = 180 / Math.PI;
     // Roll into about 30° of bank with 30 % stick, then let the stick go.
-    fly(world, 2, () => void (gy.pilot.aileron = 0.3));
+    fly(world, 4, () => {
+      gy.pilot.aileron = 0.3;
+      return attitude(gy).bank * deg >= 30;
+    });
     const bank0 = attitude(gy).bank * deg;
     let maxBackRate = 0;
     fly(world, 20, () => {
@@ -319,11 +322,16 @@ describe('Bensen B-8M low g', () => {
     expect(r.recovered).toBe(true);
   }, LONG);
 
-  it('with power on, the high thrust line pitches the nose down harder (power pushover warning)', () => {
+  it('centre-line thrust: full power barely changes the pushover; low g with power is still flagged', () => {
+    // With the propeller thrust line within 2 in of the CG (CAA Paper 2009/02), the propeller
+    // has almost no lever arm to bunt the nose over when the rotor unloads. The original
+    // high-thrust-line Bensen (7 in) pitched down much harder with power on.
     const powered = pushover(1);
     const idle = pushover(0);
+    const deg = 180 / Math.PI;
+    console.info(`pushover nose-down rate: full power ${(powered.worstNoseDownRate * deg).toFixed(1)}°/s, idle ${(idle.worstNoseDownRate * deg).toFixed(1)}°/s`);
     expect(powered.pushoverWarned).toBe(true);
     expect(idle.pushoverWarned).toBe(false);
-    expect(powered.worstNoseDownRate).toBeLessThan(idle.worstNoseDownRate);
+    expect(Math.abs(powered.worstNoseDownRate - idle.worstNoseDownRate)).toBeLessThan(0.25 * Math.abs(idle.worstNoseDownRate));
   }, LONG);
 });

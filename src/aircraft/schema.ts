@@ -309,6 +309,12 @@ export interface RotorData {
   stickFreeRollMaxTilt_deg?: number;
   /** Fastest it rolls back towards level hands-off, degrees per second. */
   stickFreeRollMaxRate_dps?: number;
+  /**
+   * Teeter (disc tilt relative to the shaft): the hub bar's stops, and the angle at which the
+   * pilot is warned (blade-strike risk), degrees.
+   */
+  teeterStop_deg?: number;
+  teeterWarning_deg?: number;
   /** Largest blowback (disc tilting back with speed), degrees. */
   maxBlowback_deg: number;
   /** Bearing friction torque, N m. */
@@ -576,6 +582,8 @@ export function validateAircraftData(raw: unknown): AircraftData {
     num(r, 'rotor.', 'stickFreeRollMaxTilt_deg', 0.1, 10, false);
     num(r, 'rotor.', 'stickFreeRollMaxRate_dps', 1, 90, false);
     num(r, 'rotor.', 'maxBlowback_deg', 0, 20);
+    num(r, 'rotor.', 'teeterStop_deg', 1, 30, false);
+    num(r, 'rotor.', 'teeterWarning_deg', 1, 30, false);
     num(r, 'rotor.', 'bearingFriction_Nm', 0, 50);
     oneOf(r, 'rotor.', 'rotation', ['clockwise', 'anticlockwise']);
     const pre = isObj(r.prerotator) ? r.prerotator : {};

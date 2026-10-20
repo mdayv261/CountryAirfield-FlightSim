@@ -28,7 +28,7 @@
       {
         "name": "nosewheel",
         "kind": "wheel",
-        "position_m": [0, -0.85, -1.5],
+        "position_m": [0, -1, -1.5],
         "spring_N_per_m": 12000,
         "damper_Ns_per_m": 630,
         "travel_m": 0.06,
@@ -39,7 +39,7 @@
       {
         "name": "left main",
         "kind": "wheel",
-        "position_m": [-0.75, -0.85, 0.25],
+        "position_m": [-0.75, -1, 0.25],
         "spring_N_per_m": 30000,
         "damper_Ns_per_m": 1700,
         "travel_m": 0.08,
@@ -49,7 +49,7 @@
       {
         "name": "right main",
         "kind": "wheel",
-        "position_m": [0.75, -0.85, 0.25],
+        "position_m": [0.75, -1, 0.25],
         "spring_N_per_m": 30000,
         "damper_Ns_per_m": 1700,
         "travel_m": 0.08,
@@ -59,7 +59,7 @@
       {
         "name": "tail skid",
         "kind": "skid",
-        "position_m": [0, -0.45, 1.6],
+        "position_m": [0, -0.6, 1.6],
         "spring_N_per_m": 30000,
         "damper_Ns_per_m": 800,
         "travel_m": 0.05
@@ -73,15 +73,15 @@
     "rollYaw_kgm2": 0
   },
   "rotor": {
-    "hubPosition_m": [0, 1.05, 0.05],
+    "hubPosition_m": [0, 0.9, 0.05],
     "bladeChord_m": 0.178,
     "liftSlope": 5.7,
     "profileDrag": 0.011,
     "collectivePitch_deg": 5.5,
     "maxCTOverSolidity": 0.18,
     "inertia_kgm2": 60,
-    "headNeutralPitch_deg": 0.95,
-    "headNeutralRoll_deg": 1.6,
+    "headNeutralPitch_deg": 0,
+    "headNeutralRoll_deg": 1.9,
     "headPitchRange_deg": 12,
     "headPitchBackRange_deg": 20,
     "stickFreeRollGain": 1.0,
@@ -91,6 +91,8 @@
     "stickFreeRollMaxRate_dps": 8,
     "headRollRange_deg": 7,
     "maxBlowback_deg": 8,
+    "teeterStop_deg": 12,
+    "teeterWarning_deg": 9,
     "bearingFriction_Nm": 2,
     "rotation": "anticlockwise",
     "prerotator": {
@@ -105,7 +107,7 @@
     "surfaces": [
       {
         "name": "fin and rudder",
-        "position_m": [0, 0.25, 2.3],
+        "position_m": [0, 0.1, 2.3],
         "plane": "yaw",
         "area_m2": 0.45,
         "aspectRatio": 1.3,
@@ -119,7 +121,7 @@
       },
       {
         "name": "tailplane",
-        "position_m": [0, 0.05, 2.25],
+        "position_m": [0, -0.1, 2.25],
         "plane": "pitch",
         "area_m2": 0.15,
         "aspectRatio": 2.5,
@@ -132,7 +134,7 @@
   },
   "propeller": {
     "pitch_m": 0.56,
-    "position_m": [0, 0.18, 0.9],
+    "position_m": [0, 0.03, 0.9],
     "J": [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.0, 1.5],
     "CT": [0.1053, 0.0865, 0.0661, 0.0524, 0.0402, 0.0224, 0.0034, -0.02, -0.045, -0.09, -0.2],
     "CP": [0.034, 0.034, 0.0323, 0.0289, 0.023, 0.0153, 0.0068, -0.003, -0.015, -0.04, -0.1],
@@ -166,12 +168,12 @@
     }
   },
   "panel": {
-    "position_m": [0, 0.05, -0.85],
+    "position_m": [0, -0.1, -0.85],
     "size_m": [0.38, 0.15],
     "tilt_deg": 20,
     "colour": "#2b2b2b",
     "lookDown_deg": 12,
-    "postTo_m": [0, -0.55, -0.9],
+    "postTo_m": [0, -0.7, -0.9],
     "gauges": [
       {
         "kind": "vsi",
@@ -267,9 +269,11 @@
     "Gear: foot-steered nosewheel (+/-34 deg) 1.5 m ahead of CG, mains 0.25 m behind CG on a 1.5 m axle, small keel tail skid; sits level.",
     "Inertia is the airframe only (pilot, engine, keel); rotor inertia is modelled separately in Stage 6.",
     "Stage 6 flight model (estimates tuned to the CLAUDE.md targets; see docs/STATUS.md):",
+    "Rotor teeter (CAA Paper 2009/02 flight tests: about 2-5 deg in normal flight, 8 deg in a violent manoeuvre, blade-propeller strike at about 11 deg): the hub bar's stops at 12 deg, warning above 9 deg (the manufacturer's allowable range on the tested gyro). Dynamic (Pitt-Peters) inflow added.",
     "Rotor: 2-blade teetering, 7 in (0.178 m) chord, solidity 0.037, NACA 8-H-12 type blades (lift slope 5.7/rad, profile drag 0.011), fixed pitch 5.5 deg (sets ~360-370 rpm in cruise), ~60 kg m2. Head tilted back 2.5 deg at neutral stick (trims about 50 kt hands-off), 12 deg forward and 20 deg back (to load the rotor on the take-off roll), +/-7 deg roll.",
     "Prerotator: clutch from the engine, 140 N m at the rotor, drives up to 330 rpm (near flight rpm, needed for the CLAUDE.md 30 m take-off roll). The clutch passes full torque from 2,600 engine rpm and less towards idle, so it cannot stall the engine.",
-    "Propeller: 52 x 22 in wooden pusher, direct drive, about 150 kgf static thrust, thrust line 0.18 m above the CG (nose-down moment with power: the power-pushover hazard).",
+    "Propeller: 52 x 22 in wooden pusher, direct drive, about 150 kgf static thrust, thrust line 0.03 m (1.2 in) above the CG.",
+    "CG / thrust line (user decision 2026-10-20): a modern centre-line-thrust layout rather than the original high-thrust-line Bensen (thrust line 0.18 m, 7 in, above the CG). Following CAA Paper 2009/02 (Glasgow University), which found the vertical CG-to-thrust-line offset the single most important factor in gyro pitch stability and recommends within 2 in, the CG sits 0.15 m higher in the airframe (all body-axis positions are 0.15 m lower than the original layout), so the propeller thrust line passes 0.03 m above it. This calms the phugoid and removes most of the power-pushover tendency.",
     "Airframe: open frame with pilot, drag area 0.6 m2 (sets the 82 kt top speed); fin and rudder (0.45 m2) in the slipstream; small tailplane (0.15 m2, assumed: the stock B-8M had none; this small one keeps pitch lively, so a sharp pushover really does unload the rotor).",
     "Cruise (decided 2026-10-19): the Bensen 65 mph (56 kt) cruise is level flight at about 45% power (~3,500 rpm); full power gives the 82 kt maximum.",
     "Engine: McCulloch 4318, 65 hp at 4100 rpm, two-stroke flat four, direct drive (assumed); bsfc 0.5 kg/kWh.",

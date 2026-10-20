@@ -96,6 +96,19 @@
     eases level in about 4 s. Any stick input switches it off. Hands-off trim unchanged.
   - Roll response (2026-10-20): about 14°/s at quarter stick, 28°/s at half, 56°/s at full, proportional. (Was
     ~165°/s at full stick with a guessed 0.04 s disc lag.) Controls soften as rotor rpm falls.
+  - Modernised after CAA Paper 2009/02, "The Aerodynamics of Gyroplanes" (user decision 2026-10-20):
+    - CG / propeller thrust line within 2 in, as the paper recommends for modern gyros: the CG sits 0.15 m higher in
+      the airframe (all body-axis positions 0.15 m lower), so the thrust line is 0.03 m (1.2 in) above it, not 0.18 m.
+      Full power no longer bunts the nose over harder in a pushover (nose-down rate the same at full power and idle).
+      Retrimmed: head neutral 0° back and 1.9° right, fin 0.5°: hands-off 52 kt level at 45 % power, dead straight.
+    - Rotor teeter (disc tilt relative to the shaft) computed, with a 12° stop and a HUD "ROTOR TEETER" warning above
+      9°. About 2–4° in steady flight (paper: ~2.5°); the paper's push-and-recover manoeuvre reaches 8–11° (paper: 8°).
+    - Dynamic (Pitt–Peters) inflow: the induced flow follows its momentum value with τ = (8/3π) R / 2V (~0.05 s in
+      cruise), so a gust or sharp pull briefly meets the old wake.
+    - Regression suite `tests/gyroCaaPaper.test.ts`: trim 30–70 mph (pitch 9° → 1°, head tilt forward with speed,
+      1–1.6° left wing low, rotor 375–380 rpm), 1° aft tilt for 5 s (+11° pitch), phugoid ~19 s ζ ≈ 0.2 (paper VPM
+      25–32 s), teeter. Known difference: the model is only weakly sensitive to the thrust-line offset (the old 7 in
+      layout was also stable here), whereas the paper found it the main destabiliser on some types.
   - Brakes (2026-10-19): toe brakes on all three wheels (B key / trigger). They hold the gyro still while prerotating
     up to ~2,800 engine rpm on gravel and ~2,500–2,900 rpm on grass; beyond that the prop thrust beats tyre grip.
   - Prerotator clutch is progressive: it passes torque in proportion to engine rpm above the stall speed (full torque
@@ -216,7 +229,7 @@
 - Measured in Chrome on the Mac mini M4 (2560x1440 display at 75 Hz): 75 fps, mean frame 13.34 ms,
   p95 13.6 ms, max 14.4 ms over 300 frames, so no dropped frames. The browser locks to the display's 75 Hz refresh.
   Physics holds 120 Hz. P pauses (physics 0 Hz, render continues) and resumes cleanly. No console errors.
-- Tests: 238 passing (Stage 8 added the flight-test programme and gust/turbulence/crosswind handling suites; Stage 7 added engine-temperature, instrument, HUD/gauge agreement, gauge geometry and view suites; Stage 6 added rotor, gyro performance and static-friction tests; Stage 5 added Decathlon performance, aerobatics, propeller-effects suites; engine response, pitch-attitude check, auto-rudder and the joystick profile added since; Stage 4 added aero, powerplant and Air-Bike performance/circuit suites; Stage 3 added rigid body, atmosphere, wind, gear and input suites). Highlights: free fall matches ½gt²;
+- Tests: 245 passing (Stage 8 added the flight-test programme and gust/turbulence/crosswind handling suites; Stage 7 added engine-temperature, instrument, HUD/gauge agreement, gauge geometry and view suites; Stage 6 added rotor, gyro performance and static-friction tests; Stage 5 added Decathlon performance, aerobatics, propeller-effects suites; engine response, pitch-attitude check, auto-rudder and the joystick profile added since; Stage 4 added aero, powerplant and Air-Bike performance/circuit suites; Stage 3 added rigid body, atmosphere, wind, gear and input suites). Highlights: free fall matches ½gt²;
   a torque-free tumble (with the intermediate-axis flip) conserves energy to 1e-6; an undamped strut bounce returns to its
   release height within 1%; all three aircraft settle at rest on their wheels (loads sum to weight, struts compress by load/k,
   taildraggers 8–13° nose-up); braking stops in v²/(2μg) on gravel and grass; rolling coast distance follows the rolling

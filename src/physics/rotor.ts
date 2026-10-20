@@ -7,6 +7,8 @@ const TWO_PI = 2 * Math.PI;
 const MIN_TIP_SPEED = 1;
 /** Momentum-theory iterations for the induced velocity each step (it changes slowly). */
 const INFLOW_ITERATIONS = 4;
+/** Pitt–Peters apparent-mass coefficient for the uniform inflow mode, 8 / (3π). */
+const INFLOW_APPARENT_MASS = 8 / (3 * Math.PI);
 /** Cap on the disc lag, s: a nearly stopped rotor on the ground would otherwise give a huge one. */
 const MAX_FLAP_LAG_S = 0.5;
 /** Ground effect never cuts the induced flow below this fraction (the formula breaks down very close in). */
@@ -42,6 +44,14 @@ export interface RotorOutput {
   mu: number;
   /** Angle of the disc to the airflow, rad (positive = air striking the underside). */
   discAlpha: number;
+  /**
+   * Teeter angle, rad: how far the blades' tip-path plane is tilted from the rotor shaft (the
+   * head's tilt from the stick). For a two-blade teetering rotor this is the see-saw angle of
+   * the hub bar; too much and a blade can strike the propeller, mast or tail.
+   */
+  teeter: number;
+  /** True while the teeter is held at the teeter stop (the hub bar against its stops). */
+  teeterAtStop: boolean;
   /** Aerodynamic torque on the rotor, N m (positive slows it, negative = autorotation driving it). */
   aeroTorque: number;
   /** Torque the prerotator is applying, N m, and the power it draws from the engine, W. */
@@ -116,6 +126,8 @@ export class Rotor {
     inflow: 0,
     mu: 0,
     discAlpha: 0,
+    teeter: 0,
+    teeterAtStop: false,
     aeroTorque: 0,
     prerotatorTorque: 0,
     prerotatorPower: 0,
@@ -190,8 +202,11 @@ export class Rotor {
     const q = inp.omegaBody.x; // pitch rate, nose up positive
     const stick = clamp1(inp.stickPitch);
     const lag = this.flapLag(rho);
-    let tiltBack = this.neutralPitch + (stick > 0 ? this.pitchBackRange : this.pitchRange) * stick - q * lag;
-    let tiltRight = this.neutralRoll + this.rollRange * clamp1(inp.stickRoll) - p * lag;
+    // The shaft (head) tilt set by the stick; the disc then flaps relative to it.
+    const shaftBack = this.neutralPitch + (stick > 0 ? this.pitchBackRange : this.pitchRange) * stick;
+    const shaftRight = this.neutralRoll + this.rollRange * clamp1(inp.stickRoll);
+    let tiltBack = shaftBack - q * lag;
+    let tiltRight = shaftRight - p * lag;
 
     // Air velocity at the hub (aircraft motion through the air plus rotation), and the airflow past it.
     this.vHub.crossVectors(inp.omegaBody, this.hub).add(inp.airVelocityBody);
@@ -211,6 +226,20 @@ export class Rotor {
       tiltBack += (blow * this.wPar.z) / wParMag;
       tiltRight += (blow * this.wPar.x) / wParMag;
     }
+    // Teeter: the disc's tilt relative to the shaft. Past the teeter stop the hub bar hits its
+    // stops and the disc can tilt no further relative to the shaft.
+    let flapBack = tiltBack - shaftBack;
+    let flapRight = tiltRight - shaftRight;
+    const teeter = Math.hypot(flapBack, flapRight);
+    const stop = degToRad(d.teeterStop_deg ?? 90);
+    o.teeterAtStop = teeter > stop;
+    if (o.teeterAtStop) {
+      flapBack *= stop / teeter;
+      flapRight *= stop / teeter;
+      tiltBack = shaftBack + flapBack;
+      tiltRight = shaftRight + flapRight;
+    }
+    o.teeter = Math.min(teeter, stop);
     const n = discAxis(tiltBack, tiltRight, this.discAxis);
     const wUp = w.dot(n); // air flowing up through the disc (positive in autorotation)
     this.wPar.copy(w).addScaledVector(n, -wUp);
@@ -226,14 +255,23 @@ export class Rotor {
       const thrustScale = rho * this.discArea * tipSpeed * tipSpeed;
       const z = Math.max(inp.hubHeight ?? Infinity, 0.01);
       const groundFactor = Math.max(MIN_GROUND_FACTOR, 1 - (R / (4 * z)) ** 2);
+      // Steady (momentum) induced velocity for this flow, iterated from the current wake.
+      let vi = this.vi;
       for (let k = 0; k < INFLOW_ITERATIONS; k++) {
-        inflow = (wUp - this.vi) / tipSpeed;
+        inflow = (wUp - vi) / tipSpeed;
         CT = this.thrustCoefficient(inflow, mu);
         thrust = CT * thrustScale;
-        const flow = Math.sqrt(wPar * wPar + (wUp - this.vi) ** 2) + 0.5;
+        const flow = Math.sqrt(wPar * wPar + (wUp - vi) ** 2) + 0.5;
         const viNew = (groundFactor * Math.max(thrust, 0)) / (2 * rho * this.discArea * flow);
-        this.vi += 0.5 * (viNew - this.vi);
+        vi += 0.5 * (viNew - vi);
       }
+      // Dynamic inflow (Pitt–Peters, uniform component): the wake is a mass of air that has to
+      // be accelerated, so the induced flow follows its steady value with a time constant
+      // τ = (8 / 3π) R / (2 V), V the total flow through the disc. A gust or a sudden pull
+      // briefly meets the old wake: thrust overshoots, then settles.
+      const flowNow = Math.sqrt(wPar * wPar + (wUp - this.vi) ** 2) + 0.5;
+      const tau = (INFLOW_APPARENT_MASS * R) / (2 * flowNow);
+      this.vi += (vi - this.vi) * Math.min(1, dt / tau);
       inflow = (wUp - this.vi) / tipSpeed;
       CT = this.thrustCoefficient(inflow, mu);
       thrust = CT * thrustScale;

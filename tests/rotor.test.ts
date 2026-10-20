@@ -47,9 +47,9 @@ describe('gyroplane rotor', () => {
   it('settles at a steady rotor speed in steady flight (the autorotation balance)', () => {
     const r = newRotor();
     r.omega = 20; // well below flight rpm
-    // Level flight at 50 kt, keel 2.5° nose-down to the airflow: with the head's 0.95° neutral
-    // back tilt (plus blowback) the disc meets the air at a few degrees, as in cruise.
-    const a = (-2.5 * Math.PI) / 180;
+    // Level flight at 50 kt, keel 1.5° nose-down to the airflow: with the head's neutral tilt
+    // (plus blowback) the disc meets the air at a few degrees, as in cruise.
+    const a = (-(2.5 - 0.95 + B.rotor!.headNeutralPitch_deg) * Math.PI) / 180;
     const v = new THREE.Vector3(0, -ktToMps(50) * Math.sin(a), -ktToMps(50) * Math.cos(a));
     for (let i = 0; i < 60 / PHYSICS_DT; i++) r.step(PHYSICS_DT, input({ airVelocityBody: v }));
     const settled = r.rpm;
@@ -97,5 +97,42 @@ describe('gyroplane rotor', () => {
       tLow = low.step(PHYSICS_DT, input({ airVelocityBody: slow, hubHeight: 2 })).thrust;
     }
     expect(tLow).toBeGreaterThan(tFree);
+  });
+
+  it('dynamic inflow: a sudden up-gust meets the old wake, so thrust overshoots then settles', () => {
+    const r = newRotor();
+    r.omega = 38;
+    // Vertical flow only (no forward speed, so no blowback to confuse the picture).
+    const still = new THREE.Vector3(0, 0, 0);
+    for (let i = 0; i < 2 / PHYSICS_DT; i++) {
+      r.omega = 38;
+      r.step(PHYSICS_DT, input({ airVelocityBody: still }));
+    }
+    // Air suddenly coming up through the disc at 3 m/s (the aircraft sinking into it).
+    const gust = new THREE.Vector3(0, -3, 0);
+    // Rotor speed held fixed, so only the wake's response is seen.
+    const first = r.step(PHYSICS_DT, input({ airVelocityBody: gust })).thrust;
+    let later = 0;
+    for (let i = 0; i < 0.3 / PHYSICS_DT; i++) {
+      r.omega = 38;
+      later = r.step(PHYSICS_DT, input({ airVelocityBody: gust })).thrust;
+    }
+    // The wake's induced flow takes a few hundredths of a second to build: thrust peaks first.
+    expect(first).toBeGreaterThan(later * 1.02);
+  });
+
+  it('teeter: the disc flaps a little relative to the shaft in cruise, and stops at the teeter stop', () => {
+    const r = newRotor();
+    r.omega = 38;
+    let o = r.step(PHYSICS_DT, input());
+    for (let i = 0; i < 1 / PHYSICS_DT; i++) o = r.step(PHYSICS_DT, input());
+    const deg = 180 / Math.PI;
+    expect(o.teeter * deg).toBeGreaterThan(0.5); // blowback at 50 kt
+    expect(o.teeter * deg).toBeLessThan(5); // small in steady flight (CAA Paper 2009/02: ~2.5°)
+    expect(o.teeterAtStop).toBe(false);
+    // A violent roll rate leaves the disc far behind the shaft: held at the stop.
+    o = r.step(PHYSICS_DT, input({ omegaBody: new THREE.Vector3(0, 0, -4) }));
+    expect(o.teeterAtStop).toBe(true);
+    expect(o.teeter * deg).toBeCloseTo(B.rotor!.teeterStop_deg!, 6);
   });
 });

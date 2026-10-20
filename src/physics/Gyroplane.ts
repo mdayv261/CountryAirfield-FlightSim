@@ -32,6 +32,8 @@ export interface GyroWarnings {
   lowRotorRpm: boolean;
   /** Rotor over its maximum rpm. */
   rotorOverspeed: boolean;
+  /** Rotor teeter past the warning angle in flight: blade-strike risk (propeller, mast, tail). */
+  teeter: boolean;
 }
 
 /**
@@ -43,7 +45,7 @@ export interface GyroWarnings {
 export class Gyroplane extends PoweredAircraft {
   readonly rotor: Rotor;
   readonly surfaces: LiftingSurfaces;
-  readonly warnings: GyroWarnings = { lowG: false, pushover: false, lowRotorRpm: false, rotorOverspeed: false };
+  readonly warnings: GyroWarnings = { lowG: false, pushover: false, lowRotorRpm: false, rotorOverspeed: false, teeter: false };
   private readonly force = new THREE.Vector3();
   private readonly moment = new THREE.Vector3();
   private readonly finArm: number;
@@ -163,7 +165,7 @@ export class Gyroplane extends PoweredAircraft {
     super.resetOnGround(x, z, headingDeg, groundY);
     this.stickFreeEngaged = 0;
     this.rotor.stop();
-    Object.assign(this.warnings, { lowG: false, pushover: false, lowRotorRpm: false, rotorOverspeed: false });
+    Object.assign(this.warnings, { lowG: false, pushover: false, lowRotorRpm: false, rotorOverspeed: false, teeter: false });
   }
 
   private updateWarnings(): void {
@@ -175,5 +177,7 @@ export class Gyroplane extends PoweredAircraft {
     w.pushover = airborne && g < PUSHOVER_G && this.pilot.throttle > PUSHOVER_THROTTLE;
     w.lowRotorRpm = airborne && lim.rotorRpmMin !== undefined && this.rotor.rpm < lim.rotorRpmMin;
     w.rotorOverspeed = lim.rotorRpmMax !== undefined && this.rotor.rpm > lim.rotorRpmMax;
+    const teeterWarn = this.data.rotor!.teeterWarning_deg;
+    w.teeter = airborne && teeterWarn !== undefined && this.rotor.out.teeter > (teeterWarn * Math.PI) / 180;
   }
 }

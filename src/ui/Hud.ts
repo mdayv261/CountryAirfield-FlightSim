@@ -86,6 +86,7 @@ export class Hud {
       else if (ac.warnings.lowG) out.push('** LOW G **');
       if (ac.warnings.lowRotorRpm) out.push('** LOW ROTOR RPM **');
       if (ac.warnings.rotorOverspeed) out.push('ROTOR OVERSPEED');
+      if (ac.warnings.teeter) out.push('** ROTOR TEETER: EASE CONTROLS **');
     }
     if (pp.out.fuelStarved) out.push('FUEL STARVED (negative g)');
     if (pp.running && pp.out.oilPressure < 0.3 && pp.rpm > 1.5 * ac.data.engine!.idleRpm) out.push('LOW OIL PRESSURE');

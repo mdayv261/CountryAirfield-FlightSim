@@ -24,11 +24,15 @@ const C = {
   blade: 0xd8dadc,
   prop: 0x8b5a2b,
 };
-const KEEL_Y = -0.55;
+/**
+ * Hand-placed parts are 0.15 m lower relative to the CG than on the original Bensen: the
+ * modern centre-line-thrust layout puts the CG higher in the airframe (see the data notes).
+ */
+const KEEL_Y = -0.7;
 
 export class GyroModel extends AircraftModel {
   /** Pilot's eye: at the front of the helmet, in the open seat ahead of the mast. */
-  readonly eye = v(0, 0.3, -0.45);
+  readonly eye = v(0, 0.15, -0.45);
   readonly chase = { back: 10, up: 3.2 };
   /** Rotor group: oriented along the disc axis, spun about its own up axis. */
   private readonly rotorGroup = new THREE.Group();
@@ -49,24 +53,24 @@ export class GyroModel extends AircraftModel {
     slab(b, 0, KEEL_Y - 0.08, 0.25, 1.5, 0.05, 0.05, C.alu); // axle tube
 
     // Seat, pilot and controls.
-    slab(b, 0, -0.38, -0.3, 0.42, 0.06, 0.42, C.red);
-    slab(b, 0, -0.1, -0.08, 0.42, 0.5, 0.06, C.red);
-    slab(b, 0, -0.08, -0.3, 0.36, 0.5, 0.26, C.pilot); // torso
-    slab(b, 0, -0.3, -0.62, 0.32, 0.14, 0.5, C.pilot); // thighs
-    for (const x of [-0.1, 0.1]) slab(b, x, -0.52, -0.92, 0.1, 0.36, 0.1, C.pilot); // shins to the rudder bar
-    b.add(new THREE.SphereGeometry(0.12, 8, 6), C.helmet, new THREE.Matrix4().makeTranslation(0, 0.3, -0.3));
-    slab(b, 0, 0.28, -0.42, 0.16, 0.06, 0.03, C.black); // visor
-    tube(b, v(0, KEEL_Y, -0.55), v(0, -0.1, -0.6), 0.015, C.black); // control stick (to the head via push rods)
+    slab(b, 0, -0.53, -0.3, 0.42, 0.06, 0.42, C.red);
+    slab(b, 0, -0.25, -0.08, 0.42, 0.5, 0.06, C.red);
+    slab(b, 0, -0.23, -0.3, 0.36, 0.5, 0.26, C.pilot); // torso
+    slab(b, 0, -0.45, -0.62, 0.32, 0.14, 0.5, C.pilot); // thighs
+    for (const x of [-0.1, 0.1]) slab(b, x, -0.67, -0.92, 0.1, 0.36, 0.1, C.pilot); // shins to the rudder bar
+    b.add(new THREE.SphereGeometry(0.12, 8, 6), C.helmet, new THREE.Matrix4().makeTranslation(0, 0.15, -0.3));
+    slab(b, 0, 0.13, -0.42, 0.16, 0.06, 0.03, C.black); // visor
+    tube(b, v(0, KEEL_Y, -0.55), v(0, -0.25, -0.6), 0.015, C.black); // control stick (to the head via push rods)
     // Push rods from the stick base aft along the keel, then up beside the mast to the head.
     tube(b, v(0.05, KEEL_Y + 0.05, -0.55), v(0.05, KEEL_Y + 0.05, HUB[2]), 0.01, C.alu);
     tube(b, v(0.05, KEEL_Y + 0.05, HUB[2]), v(0.05, HUB[1] - 0.1, HUB[2]), 0.01, C.alu);
     slab(b, 0, KEEL_Y + 0.05, -1.05, 0.7, 0.04, 0.05, C.black); // rudder bar
-    slab(b, 0, -0.25, 0.2, 0.36, 0.3, 0.22, C.yellow); // fuel tank behind the seat
+    slab(b, 0, -0.4, 0.2, 0.36, 0.3, 0.22, C.yellow); // fuel tank behind the seat
 
     // McCulloch flat-four behind the mast, prop shaft aft.
-    slab(b, 0, 0.12, 0.55, 0.5, 0.26, 0.42, C.engine);
-    for (const s of [-1, 1]) slab(b, s * 0.3, 0.12, 0.55, 0.1, 0.18, 0.36, C.black); // cylinder banks
-    tube(b, v(0, KEEL_Y, 0.45), v(0, 0, 0.55), 0.025, C.alu); // engine mount
+    slab(b, 0, -0.03, 0.55, 0.5, 0.26, 0.42, C.engine);
+    for (const s of [-1, 1]) slab(b, s * 0.3, -0.03, 0.55, 0.1, 0.18, 0.36, C.black); // cylinder banks
+    tube(b, v(0, KEEL_Y, 0.45), v(0, -0.15, 0.55), 0.025, C.alu); // engine mount
 
     // Gear: mains on the axle, nosewheel in a fork at the front, and the keel's tail skid.
     for (const leg of data.gear.legs) {
