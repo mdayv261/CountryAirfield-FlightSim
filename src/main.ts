@@ -27,8 +27,12 @@ import { AircraftCamera, CAMERA, type AircraftView } from './ui/AircraftCamera';
 import { Instruments } from './cockpit/instruments';
 import { Panel } from './cockpit/Panel';
 import { Hud } from './ui/Hud';
-import { RUNWAYS } from './world/layout';
-import { WINDSOCK } from './world/layout';
+import { APRON_SPAWN, RUNWAYS, WINDSOCK } from './world/layout';
+import { DEFAULT_SETTINGS, loadSettings, saveSettings, START_POSITIONS, type StartPosition } from './core/settings';
+import type { AircraftId } from './aircraft';
+import { SoundSystem } from './audio/SoundSystem';
+import { outsideHearing } from './audio/soundModel';
+import { Menu, type MenuChange } from './ui/Menu';
 
 const container = document.getElementById('app')!;
 
@@ -42,7 +46,11 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 container.appendChild(renderer.domElement);
 
-const world = createScene(window.innerWidth / window.innerHeight);
+// Settings (menu, Esc) persist in browser storage; everything below starts from them.
+const settings = loadSettings();
+const saveNow = () => saveSettings(settings);
+
+const world = createScene(window.innerWidth / window.innerHeight, settings.timeOfDay);
 const { scene, camera, heightfield, windsock } = world;
 const groundAt = (x: number, z: number) => heightfield.heightAt(x, z);
 const overlay = new FpsOverlay(container);
@@ -55,17 +63,25 @@ scene.add(measure.object);
 
 // Physics: ground, atmosphere and wind, stepped at the fixed 120 Hz rate.
 const physics = new PhysicsWorld({ heightAt: groundAt, surfaceAt });
-const DEFAULT_PRESET = 1; // light northerly: a gentle headwind on runway 36 for first flights
-let presetIndex = DEFAULT_PRESET;
-physics.wind.applyPreset(WIND_PRESETS[presetIndex]);
+/** Set the wind model from the wind settings (a preset, or custom values). */
+const applyWind = () => {
+  const w = settings.wind;
+  const p = WIND_PRESETS[w.preset];
+  if (p) Object.assign(w, { fromDeg: p.fromDeg % 360, speedKt: p.speedKt, gustKt: p.gustKt, turbulence: p.turbulence });
+  physics.wind.setSteady(w.fromDeg, w.speedKt);
+  physics.wind.setGust(w.gustKt);
+  physics.wind.turbulence = w.turbulence;
+};
+applyWind();
 const WIND_STEP_KT = 1;
 const GUST_STEP_KT = 1;
 const GUST_MAX_KT = 20;
 const WIND_STEP_DEG = 10;
 const WIND_MAX_KT = 40;
 const adjustWind = (dDeg: number, dKt: number) => {
-  const r = physics.wind.reported;
-  physics.wind.setSteady(r.fromDeg + dDeg, THREE.MathUtils.clamp(Math.round(r.speedKt + dKt), 0, WIND_MAX_KT));
+  const w = settings.wind;
+  w.fromDeg = (((Math.round(w.fromDeg + dDeg) % 360) + 360) % 360);
+  w.speedKt = THREE.MathUtils.clamp(Math.round(w.speedKt + dKt), 0, WIND_MAX_KT);
 };
 const windsockAir = new THREE.Vector3();
 const windsockTop = windsock.object.position.clone().add(new THREE.Vector3(0, WINDSOCK.mastHeight, 0));
@@ -115,43 +131,51 @@ for (const f of FLEET) {
   f.panel = new Panel(f.aircraft.data.panel);
   f.model.object.add(f.panel.object);
 }
-let fleetIndex = 0;
-let aircraft = FLEET[0].aircraft;
-let aircraftModel = FLEET[0].model;
+const FLEET_IDS: AircraftId[] = ['airbike103', 'decathlon8kcab', 'bensenB8M'];
+let fleetIndex = Math.max(0, FLEET_IDS.indexOf(settings.aircraft));
+let aircraft = FLEET[fleetIndex].aircraft;
+let aircraftModel = FLEET[fleetIndex].model;
 scene.add(aircraftModel.object);
 physics.add(aircraft);
 const hud = new Hud(container, aircraft);
 const instruments = new Instruments();
 const windAtAircraft = new THREE.Vector3();
 const aircraftCam = new AircraftCamera(camera, renderer.domElement, groundAt);
-/** Lined up a few metres inside each threshold. */
+/** Start positions: the apron, or lined up a few metres inside each threshold. */
 const SPAWN_INSET_M = 8;
 const half = RUNWAYS.length / 2 - SPAWN_INSET_M;
-const SPAWNS = [
+const SPAWNS: Array<{ name: StartPosition; x: number; z: number; heading: number }> = [
+  { name: 'apron', x: APRON_SPAWN.x, z: APRON_SPAWN.z, heading: APRON_SPAWN.headingDeg },
   { name: 'gravel 36', x: RUNWAYS.gravel.cx, z: half, heading: 0 },
   { name: 'grass 36', x: RUNWAYS.grass.cx, z: half, heading: 0 },
   { name: 'gravel 18', x: RUNWAYS.gravel.cx, z: -half, heading: 180 },
   { name: 'grass 18', x: RUNWAYS.grass.cx, z: -half, heading: 180 },
 ];
-let spawnIndex = 0;
+let spawnIndex = Math.max(0, START_POSITIONS.indexOf(settings.start));
 const spawn = (i: number) => {
   spawnIndex = i;
   const s = SPAWNS[i];
+  settings.start = s.name;
   aircraft.resetOnGround(s.x, s.z, s.heading, groundAt(s.x, s.z));
   input.keyboardControls.state.throttle = 0;
   aircraftCam.reset();
   instruments.reset();
 };
-spawn(0);
+spawn(spawnIndex);
+const sound = new SoundSystem();
+sound.setAircraft(aircraft.data.sound);
+sound.setVolume(settings.sound.volume, settings.sound.muted);
 /** Swap to another aircraft at the same spawn point. */
 const selectAircraft = (i: number) => {
   physics.remove(aircraft);
   scene.remove(aircraftModel.object);
   fleetIndex = i;
+  settings.aircraft = FLEET_IDS[i];
   ({ aircraft, model: aircraftModel } = FLEET[i]);
   physics.add(aircraft);
   scene.add(aircraftModel.object);
   hud.setAircraft(aircraft);
+  sound.setAircraft(aircraft.data.sound);
   spawn(spawnIndex);
   if (view === 'flyby' || view === 'tower') aircraftCam.reset();
 };
@@ -179,14 +203,59 @@ const setView = (v: View) => {
   }
   aircraftCam.reset();
 };
-// Keyboard flight keys on from the start; arrows fly rather than look.
-input.keyboardEnabled = true;
-syncInputModes();
+/** Controls and HUD units from the settings. */
+const applyControls = () => {
+  input.keyboardEnabled = settings.controls.keyboardFlight;
+  input.mouse.enabled = settings.controls.mouseStick;
+  input.setAutoRudder(settings.controls.autoRudder);
+  syncInputModes();
+};
+applyControls();
+hud.units = settings.units;
+
+// The settings menu (Esc). It pauses the flight while open; keys go to it, not the sim.
+const menu = new Menu(
+  container,
+  settings,
+  (what: MenuChange) => {
+    if (what === 'aircraft') selectAircraft(Math.max(0, FLEET_IDS.indexOf(settings.aircraft)));
+    else if (what === 'start') spawn(Math.max(0, START_POSITIONS.indexOf(settings.start)));
+    else if (what === 'wind') applyWind();
+    else if (what === 'time') world.setTimeOfDay(settings.timeOfDay);
+    else if (what === 'units') hud.units = settings.units;
+    else if (what === 'sound') sound.setVolume(settings.sound.volume, settings.sound.muted);
+    else if (what === 'controls') applyControls();
+    saveNow();
+  },
+  {
+    openControlMapping: () => {
+      if (!calibration.visible) calibration.toggle();
+    },
+    resetDefaults: () => {
+      Object.assign(settings, structuredClone(DEFAULT_SETTINGS));
+      applyWind();
+      world.setTimeOfDay(settings.timeOfDay);
+      hud.units = settings.units;
+      sound.setVolume(settings.sound.volume, settings.sound.muted);
+      applyControls();
+      selectAircraft(Math.max(0, FLEET_IDS.indexOf(settings.aircraft)));
+      spawn(Math.max(0, START_POSITIONS.indexOf(settings.start)));
+      saveNow();
+    },
+  },
+);
+keyboard.blocked = () => menu.isOpen;
+keyboard.onPress('Escape', () => menu.toggle());
+// Browsers only allow sound after a user gesture: start it on the first key press or click.
+for (const ev of ['keydown', 'pointerdown'] as const) window.addEventListener(ev, () => sound.unlock());
+const toAircraft = new THREE.Vector3();
+let lastDistance = 0;
 
 let stepsThisFrame = 0;
 let lastFrameMs = performance.now();
 const loop = new GameLoop({
   step: (dt) => {
+    if (menu.isOpen) return; // the flight waits while the menu is open
     const c = input.controls;
     if (view === 'free') {
       // In the free camera the controls drive the Stage 3 test block.
@@ -227,6 +296,14 @@ const loop = new GameLoop({
     FLEET[fleetIndex].panel?.update(readings, dt, view === 'cockpit');
     hud.visible = view !== 'free';
     hud.update(readings);
+    // Sound: in the cockpit at full strength; outside, fading with distance and Doppler-shifted.
+    toAircraft.subVectors(aircraftModel.object.position, camera.position);
+    const distance = toAircraft.length();
+    const closing = dt > 0 ? (lastDistance - distance) / dt : 0;
+    lastDistance = distance;
+    const outside = outsideHearing(distance, view === 'flyby' || view === 'tower' ? closing : 0);
+    sound.setPaused(loop.paused || menu.isOpen);
+    sound.update(aircraft, view === 'cockpit' ? { inCockpit: true, gain: 1, doppler: 1 } : { inCockpit: false, ...outside });
     // The windsock feels the same wind as everything else, at its mast-top height.
     windsock.update(physics.windAt(windsockTop, windsockAir), now / 1000);
     if (blockMesh.object.parent) blockMesh.update(alpha);
@@ -251,7 +328,7 @@ function statusLines(): string[] {
   const w = physics.wind;
   const gust = w.gustAmplitude > 0 ? `, gusts +${mpsToKt(w.gustAmplitude).toFixed(0)} kt` : ', no gusts';
   const now = mpsToKt(windsockAir.length()).toFixed(0);
-  const lines = [`wind preset: ${WIND_PRESETS[presetIndex]?.name ?? 'custom'}${gust}, turbulence ${w.turbulence}, sock ${now} kt`];
+  const lines = [`wind preset: ${WIND_PRESETS[settings.wind.preset]?.name ?? 'custom'}${gust}, turbulence ${w.turbulence}, sock ${now} kt`];
   const c = input.controls;
   const s = (v: number) => (v >= 0 ? '+' : '') + v.toFixed(2);
   const src = [...new Set(Object.values(input.source))].join('/');
@@ -275,8 +352,15 @@ function statusLines(): string[] {
 }
 
 keyboard.onPress('KeyP', () => loop.togglePause());
-keyboard.onPress('Tab', () => selectAircraft((fleetIndex + 1) % FLEET.length));
-keyboard.onPress('KeyU', () => input.setAutoRudder(!input.aids.autoRudder));
+keyboard.onPress('Tab', () => {
+  selectAircraft((fleetIndex + 1) % FLEET.length);
+  saveNow();
+});
+keyboard.onPress('KeyU', () => {
+  settings.controls.autoRudder = !settings.controls.autoRudder;
+  applyControls();
+  saveNow();
+});
 keyboard.onPress('KeyV', () => setView(VIEWS[(VIEWS.indexOf(view) + 1) % VIEWS.length]));
 keyboard.onPress('KeyI', () => (hud.enabled = !hud.enabled));
 // Digits pick the aircraft views, except in the free camera, where they keep its viewpoints.
@@ -288,27 +372,42 @@ for (let k = 0; k < 6; k++) {
 }
 keyboard.onPress('KeyE', () => (aircraft.powerplant.running ? aircraft.powerplant.stop() : aircraft.powerplant.start()));
 keyboard.onPress('Backspace', () => spawn(spawnIndex));
-['Digit7', 'Digit8', 'Digit9', 'Digit0'].forEach((code, i) => keyboard.onPress(code, () => spawn(i)));
+// 7 8 9 0: the four thresholds (gravel 36, grass 36, gravel 18, grass 18); the apron is in the menu.
+['Digit7', 'Digit8', 'Digit9', 'Digit0'].forEach((code, i) =>
+  keyboard.onPress(code, () => {
+    spawn(i + 1);
+    saveNow();
+  }),
+);
 keyboard.onPress('KeyM', () => measure.mark());
 keyboard.onPress('KeyH', () => inspect.toggleHelp());
 keyboard.onPress('KeyX', () => (world.axisMarker.visible = !world.axisMarker.visible));
 keyboard.onPress('KeyT', throwBlock);
 keyboard.onPress('KeyO', () => calibration.toggle());
 keyboard.onPress('KeyK', () => {
-  input.keyboardEnabled = !input.keyboardEnabled;
-  syncInputModes();
+  settings.controls.keyboardFlight = !settings.controls.keyboardFlight;
+  applyControls();
+  saveNow();
 });
 keyboard.onPress('KeyJ', () => {
-  input.mouse.enabled = !input.mouse.enabled;
-  syncInputModes();
+  settings.controls.mouseStick = !settings.controls.mouseStick;
+  applyControls();
+  saveNow();
 });
 keyboard.onPress('KeyN', () => {
-  presetIndex = (presetIndex + 1) % WIND_PRESETS.length;
-  physics.wind.applyPreset(WIND_PRESETS[presetIndex]);
+  settings.wind.preset = (Math.max(-1, settings.wind.preset) + 1) % WIND_PRESETS.length;
+  applyWind();
+  saveNow();
 });
+/** A wind key changed something: now custom wind, applied and saved. */
+const windChanged = () => {
+  settings.wind.preset = -1;
+  applyWind();
+  saveNow();
+};
 const customWind = (dDeg: number, dKt: number) => () => {
   adjustWind(dDeg, dKt);
-  presetIndex = -1;
+  windChanged();
 };
 keyboard.onPress('BracketLeft', customWind(0, -WIND_STEP_KT));
 keyboard.onPress('BracketRight', customWind(0, WIND_STEP_KT));
@@ -316,15 +415,14 @@ keyboard.onPress('Comma', customWind(-WIND_STEP_DEG, 0));
 keyboard.onPress('Period', customWind(WIND_STEP_DEG, 0));
 // Gusts (strongest gust above the mean wind) and turbulence level, next to the wind keys.
 const adjustGust = (dKt: number) => () => {
-  const kt = Math.round(mpsToKt(physics.wind.gustAmplitude) + dKt);
-  physics.wind.setGust(THREE.MathUtils.clamp(kt, 0, GUST_MAX_KT));
-  presetIndex = -1;
+  settings.wind.gustKt = THREE.MathUtils.clamp(Math.round(settings.wind.gustKt + dKt), 0, GUST_MAX_KT);
+  windChanged();
 };
 keyboard.onPress('Semicolon', adjustGust(-GUST_STEP_KT));
 keyboard.onPress('Quote', adjustGust(GUST_STEP_KT));
 keyboard.onPress('Slash', () => {
-  physics.wind.nextTurbulence();
-  presetIndex = -1;
+  settings.wind.turbulence = physics.wind.nextTurbulence();
+  windChanged();
 });
 
 window.addEventListener('resize', () => {
@@ -341,6 +439,7 @@ window.addEventListener('keydown', (e) => {
 Object.assign(window, {
   sim: {
     scene, camera, heightfield, freeCam, measure, renderer, physics, block, input, throwBlock, spawn, setView, selectAircraft,
+    settings, menu, sound,
     get aircraft() {
       return aircraft;
     },

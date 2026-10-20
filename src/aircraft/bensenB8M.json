@@ -247,6 +247,26 @@
       }
     ]
   },
+  "sound": {
+    "engine": {
+      "harmonics": [1, 0.6, 0.5, 0.35, 0.3, 0.2, 0.15],
+      "loudness": 0.85,
+      "noise": 0.4,
+      "noiseBandHz": [700, 2200],
+      "pulse": 0.55,
+      "brightnessHz": [1500, 4500],
+      "throb": 0.3
+    },
+    "prop": {
+      "level": 0.4,
+      "blades": 2
+    },
+    "cockpit": "open",
+    "rotorSwish": {
+      "level": 0.5,
+      "bandHz": 650
+    }
+  },
   "limits": {
     "vne_mps": 42.184,
     "rotorRpmMin": 200,
@@ -280,6 +300,7 @@
     "Hands-off trim (user request 2026-10-19): head rigged 0.95 deg back and 1.6 deg right (cancels propeller torque at cruise power), fin offset 0.5 deg (cancels propeller yaw), plus stick-free roll stability that keeps the rotor disc level when the stick is released sideways (modern-gyro behaviour; the stock B-8M was spirally neutral). Hands-off at 45% power it flies straight and level at 53 kt with about a 1 deg left-wing-low list; power changes climb or descend. Revised 2026-10-20 (user: banking felt more aggressive in the cockpit view): the levelling builds up over 2 s once the stick is centred, its head tilt is capped at 2.5 deg and it rolls back at no more than 8 deg/s, so centring the stick after a turn eases the gyro level in about 4 s instead of snapping it back at ~50 deg/s.",
     "Roll and pitch damping (2026-10-20, user: roll too aggressive): the disc lag is the blade flapping time constant 16/(Lock number x rotor speed), Lock number about 3.7 from the blade data (rotor inertia 60 kg m2 over 2 blades), about 0.11 s at 370 rpm. The earlier fixed 0.04 s gave ~165 deg/s at full stick; now about 60 deg/s.",
     "Brakes on all three wheels (user request 2026-10-19; assumed, the stock B-8M had none): main brakes alone (about 60% of the weight) slipped above ~2,800 engine rpm; with the nosewheel braked too the gyro holds still while prerotating at ~2,800 rpm on gravel and ~2,500 rpm on grass.",
-    "Panel (Stage 7): instrument pod on the keel ahead of the stick. Gauge markings assumed: ASI red line 82 kt; McCulloch red line 4,100 rpm; rotor 200-400 rpm green; CHT limit 260 C, EGT limit 680 C (assumed). Air-cooled engine: CHT and EGT in place of the stage brief's coolant gauge (that was for a Subaru)."
+    "Panel (Stage 7): instrument pod on the keel ahead of the stick. Gauge markings assumed: ASI red line 82 kt; McCulloch red line 4,100 rpm; rotor 200-400 rpm green; CHT limit 260 C, EGT limit 680 C (assumed). Air-cooled engine: CHT and EGT in place of the stage brief's coolant gauge (that was for a Subaru).",
+    "Sound (Stage 9): McCulloch 4318 flat-4 2-stroke, four firings per revolution (~230 Hz at 3,450 rpm), a high snarl, direct drive (no belt whine; the brief's Subaru belt whine does not apply); open cockpit; rotor swish at the blade-passing rate (2 x rotor rpm / 60)."
   ]
 }

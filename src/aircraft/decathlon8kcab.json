@@ -249,6 +249,26 @@
       }
     ]
   },
+  "sound": {
+    "engine": {
+      "harmonics": [1, 0.55, 0.4, 0.22, 0.12, 0.06],
+      "loudness": 0.9,
+      "noise": 0.3,
+      "noiseBandHz": [250, 700],
+      "pulse": 0.35,
+      "brightnessHz": [700, 1800],
+      "throb": 0.6
+    },
+    "prop": {
+      "level": 0.45,
+      "blades": 2
+    },
+    "cockpit": "enclosed",
+    "stallHorn": {
+      "frequencyHz": 1250,
+      "level": 0.5
+    }
+  },
   "limits": {
     "vne_mps": 88.999,
     "vno_mps": 71.508,
@@ -283,6 +303,7 @@
     "Engine: Lycoming AEIO-360-H1B, 180 hp at 2700 rpm, fuel injected with inverted fuel and oil (limits.invertedSystems).",
     "Rudder power falls to about 40% beyond 35 deg alpha (fin in the stalled wing's wake), which sets a realistic spin rate.",
     "Pitch break past the stall (CmExtra) is sized so full aft stick without rotation settles just above the stall (about 26 deg alpha): no stable deep stall. In a spin the inertial pitch-up from roll and yaw rates holds a higher alpha.",
-    "Panel (Stage 7, layout per user 2026-10-20): top row G-meter, ALT, AI (centre), ASI, VSI; DG in place of the wet compass, slip ball under the ASI, engine gauges (RPM, MAP, fuel, CHT) in a 2x2 block to the right. Markings from CLAUDE.md speeds (green 49-139 kt, yellow 139-173 kt, red line 173 kt), red line 2,700 rpm, +6/-5 g; Lycoming CHT limit 260 C (500 F)."
+    "Panel (Stage 7, layout per user 2026-10-20): top row G-meter, ALT, AI (centre), ASI, VSI; DG in place of the wet compass, slip ball under the ASI, engine gauges (RPM, MAP, fuel, CHT) in a 2x2 block to the right. Markings from CLAUDE.md speeds (green 49-139 kt, yellow 139-173 kt, red line 173 kt), red line 2,700 rpm, +6/-5 g; Lycoming CHT limit 260 C (500 F).",
+    "Sound (Stage 9): Lycoming flat-4 4-stroke, two firings per revolution (~80 Hz at 2,400 rpm), deep and throaty; enclosed cabin muffles wind and engine highs; stall warning horn."
   ]
 }

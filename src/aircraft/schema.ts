@@ -405,6 +405,42 @@ export interface PanelData {
   gauges: GaugeData[];
 }
 
+/**
+ * Synthesised sound (audio/voices.ts). Frequencies follow the physics: the engine note is the
+ * firing frequency (rpm/60 x cylinders x 2/strokes), its tone colour the harmonic mix.
+ */
+export interface SoundData {
+  engine: {
+    /** Relative amplitudes of the firing frequency and its harmonics (1st, 2nd, 3rd...). */
+    harmonics: number[];
+    /** Overall engine loudness at full power, 0..1. */
+    loudness: number;
+    /** Exhaust/mechanical noise share, 0..1, and its band centre at idle and full power, Hz. */
+    noise: number;
+    noiseBandHz: [number, number];
+    /** How strongly each firing pulses the exhaust noise (2-strokes crackle), 0..1. */
+    pulse: number;
+    /** Low-pass cutoff at idle and full power, Hz (an open throttle sounds brighter). */
+    brightnessHz: [number, number];
+    /**
+     * Throb at crankshaft rate (rpm/60), 0..1: no two cylinders fire quite alike, so a
+     * multi-cylinder engine has a component below its firing note (half of it for a flat-4
+     * four-stroke): the deep, lumpy beat of a Lycoming. Zero for a single (crank rate = firing).
+     */
+    throb: number;
+  };
+  /** Belt reduction drive: belt teeth passing per crank revolution, and level 0..1. */
+  beltWhine?: { teethPerRev: number; level: number };
+  /** Propeller blade-passing buzz level, 0..1. */
+  prop: { level: number; blades: number };
+  /** 'open' (Air-Bike, gyro: loud wind, raw engine) or 'enclosed' (cabin: muffled). */
+  cockpit: 'open' | 'enclosed';
+  /** Rotor blade swish: level 0..1 and noise band centre, Hz. */
+  rotorSwish?: { level: number; bandHz: number };
+  /** Stall warning horn: tone, Hz, and level 0..1. */
+  stallHorn?: { frequencyHz: number; level: number };
+}
+
 export interface AircraftData {
   id: string;
   name: string;
@@ -420,6 +456,7 @@ export interface AircraftData {
   propeller?: PropellerData;
   engine?: EngineData;
   panel?: PanelData;
+  sound?: SoundData;
   limits: Limits;
   targets: Targets;
   /** Free-text provenance and assumptions; not used by the physics. */
@@ -690,6 +727,36 @@ export function validateAircraftData(raw: unknown): AircraftData {
         for (const k of ['green', 'yellow', 'white'])
           if (gg[k] !== undefined && !pair(gg[k], 100_000)) problems.push(`${path}${k} must be [from, to]`);
       });
+  }
+
+  if (raw.sound !== undefined) {
+    const sd = section('sound');
+    const e = isObj(sd.engine) ? sd.engine : {};
+    if (!Array.isArray(e.harmonics) || e.harmonics.length < 1 || !e.harmonics.every((h) => typeof h === 'number' && h >= 0 && h <= 1))
+      problems.push('sound.engine.harmonics must be a list of amplitudes 0..1');
+    for (const k of ['loudness', 'noise', 'pulse', 'throb']) num(e, 'sound.engine.', k, 0, 1);
+    for (const k of ['noiseBandHz', 'brightnessHz'])
+      if (!Array.isArray(e[k]) || (e[k] as unknown[]).length !== 2 || !(e[k] as unknown[]).every((v) => typeof v === 'number' && v > 10 && v < 20000))
+        problems.push(`sound.engine.${k} must be [idle, full] in Hz`);
+    if (sd.beltWhine !== undefined) {
+      const b = isObj(sd.beltWhine) ? sd.beltWhine : {};
+      num(b, 'sound.beltWhine.', 'teethPerRev', 1, 200);
+      num(b, 'sound.beltWhine.', 'level', 0, 1);
+    }
+    const pr = isObj(sd.prop) ? sd.prop : {};
+    num(pr, 'sound.prop.', 'level', 0, 1);
+    num(pr, 'sound.prop.', 'blades', 1, 8);
+    oneOf(sd, 'sound.', 'cockpit', ['open', 'enclosed']);
+    if (sd.rotorSwish !== undefined) {
+      const r2 = isObj(sd.rotorSwish) ? sd.rotorSwish : {};
+      num(r2, 'sound.rotorSwish.', 'level', 0, 1);
+      num(r2, 'sound.rotorSwish.', 'bandHz', 20, 10000);
+    }
+    if (sd.stallHorn !== undefined) {
+      const h = isObj(sd.stallHorn) ? sd.stallHorn : {};
+      num(h, 'sound.stallHorn.', 'frequencyHz', 100, 8000);
+      num(h, 'sound.stallHorn.', 'level', 0, 1);
+    }
   }
 
   const inertia = section('inertia');

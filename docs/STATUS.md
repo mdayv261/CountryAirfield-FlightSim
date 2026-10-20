@@ -1,7 +1,7 @@
 # Project Status
 
-**Current stage:** 8 – Flight testing and tuning (performance and handling checks pass 2026-10-20; awaiting the user's flight notes)
-**Next stage:** 9 (after all docs/FLIGHT_NOTES.md notes are resolved)
+**Current stage:** 9 – Sound and menus (complete; exit checks pass 2026-10-20). Stage 8 flight notes: none yet (docs/FLIGHT_NOTES.md).
+**Next stage:** 10 (awaiting the brief)
 
 ## What works
 - Vite 8 + TypeScript 7 (strict) + Three.js r186 + Vitest 4. Scripts: `npm run dev`, `npm test`, `npm run build`, `npm run preview`, `npm run typecheck`.
@@ -26,6 +26,27 @@
   - Sky: gradient dome shader with a sun disc and glow (sun azimuth 25°, elevation 52°, northern sky), with matching horizon fog.
   - Altocumulus: rows of lumpy cloudlets (6 lobes each, instanced), 22 km square layer, every lobe between 3,000 and 4,500 m.
   - Sun shadows (2048 map) over an 800 m square around the airfield. Logarithmic depth buffer.
+- **Stage 9 sound and menus** (2026-10-20):
+  - Sound (`src/audio`): Web Audio synthesis driven by the physics (`soundModel.ts`, pure and tested; `SoundSystem.ts`).
+    Engine note at the firing frequency (rpm/60 x cylinders x 2/strokes) with each engine's harmonic mix from its data
+    file, a low-pass that opens with throttle, exhaust noise pulsed at the firing rate, and a crankshaft-rate throb for
+    multi-cylinder engines. Hirth F-33 single 2-stroke (bright, crackling, toothed-belt whine), McCulloch 4318 flat-4
+    2-stroke (high snarl, direct drive: the brief's Subaru belt whine does not apply), Lycoming flat-4 4-stroke (deep,
+    throaty, strong half-order throb). Measured in Chrome at full power: fundamentals 88 / 267 / 91 Hz, spectral
+    centroids 1,286 / 1,125 / 658 Hz (Hirth / McCulloch / Lycoming). Propeller blade-passing buzz; wind roar by airspeed
+    (∝ V², pitch rising with speed; an enclosed cabin keeps 70 % out and muffles engine highs); gyro rotor swish beating
+    at 2 x rotor rpm / 60; Decathlon stall horn (same warning logic as the HUD). Outside views: distance fade and
+    Doppler. Sound starts on the first key press or click (browser rule) and pauses with the sim.
+  - Menu (Esc, `src/ui/Menu.ts`): aircraft; start position (apron, engine running, facing the runway, or any of the
+    four thresholds); wind (preset, direction, speed, gusts, turbulence); time of day (07:00–17:00, daylight only:
+    the sun moves across the northern sky at 37.5° S, equinox, with light and shadows following, `src/world/sun.ts`);
+    controls (keyboard flight, mouse stick, auto-rudder, joystick mapping); units for the HUD (altitude ft/m, vertical
+    speed fpm or m/s, temperature °C/°F, fuel L/US gal, MAP inHg/hPa; airspeed always knots, gauges keep their own
+    markings); sound volume and mute. The flight pauses while the menu is open; keys go to the menu.
+  - Settings (`src/core/settings.ts`) saved in localStorage ("cfs.settings.v1"), sanitised on load (an old or damaged
+    save falls back to defaults). Keys that change settings (Tab, 7–0, K, J, U, wind keys) save too. Verified in Chrome:
+    gyro, apron, wind 270/12 G7 moderate, 16:00, metres, volume 50 %, auto-rudder all survived a reload.
+  - Browser: 75 fps (13.3 ms mean, p95 15.0 ms) with sound running; no console errors.
 - **Stage 8 flight testing and tuning** (2026-10-20):
   - Automated test pilot (`tests/flightTest/programme.ts`, `npm run flight-test`): flies each aircraft through stall,
     cruise, climb (with Vy/Vx for the Decathlon), maximum level speed (gyro), take-off roll and landing roll, and writes
@@ -231,7 +252,7 @@
 - Measured in Chrome on the Mac mini M4 (2560x1440 display at 75 Hz): 75 fps, mean frame 13.34 ms,
   p95 13.6 ms, max 14.4 ms over 300 frames, so no dropped frames. The browser locks to the display's 75 Hz refresh.
   Physics holds 120 Hz. P pauses (physics 0 Hz, render continues) and resumes cleanly. No console errors.
-- Tests: 245 passing (Stage 8 added the flight-test programme and gust/turbulence/crosswind handling suites; Stage 7 added engine-temperature, instrument, HUD/gauge agreement, gauge geometry and view suites; Stage 6 added rotor, gyro performance and static-friction tests; Stage 5 added Decathlon performance, aerobatics, propeller-effects suites; engine response, pitch-attitude check, auto-rudder and the joystick profile added since; Stage 4 added aero, powerplant and Air-Bike performance/circuit suites; Stage 3 added rigid body, atmosphere, wind, gear and input suites). Highlights: free fall matches ½gt²;
+- Tests: 259 passing (Stage 9 added settings, units, sun and sound-model suites; Stage 8 added the flight-test programme and gust/turbulence/crosswind handling suites; Stage 7 added engine-temperature, instrument, HUD/gauge agreement, gauge geometry and view suites; Stage 6 added rotor, gyro performance and static-friction tests; Stage 5 added Decathlon performance, aerobatics, propeller-effects suites; engine response, pitch-attitude check, auto-rudder and the joystick profile added since; Stage 4 added aero, powerplant and Air-Bike performance/circuit suites; Stage 3 added rigid body, atmosphere, wind, gear and input suites). Highlights: free fall matches ½gt²;
   a torque-free tumble (with the intermediate-axis flip) conserves energy to 1e-6; an undamped strut bounce returns to its
   release height within 1%; all three aircraft settle at rest on their wheels (loads sum to weight, struts compress by load/k,
   taildraggers 8–13° nose-up); braking stops in v²/(2μg) on gravel and grass; rolling coast distance follows the rolling
@@ -308,6 +329,5 @@
 - Clouds are not fogged and stop at the layer edge (11 km out), so at high altitude the edge of the layer can be seen.
 
 ## Next step
-Fly the aircraft and add notes to docs/FLIGHT_NOTES.md (template inside) for anything that feels wrong, including
-crosswind and gusty presets (N cycles them). Each note will be resolved there; Stage 8 closes when all are resolved.
-`npm run flight-test` regenerates docs/FLIGHT_TEST_REPORT.md after any change.
+Try the menu (Esc) and listen to each aircraft (sound starts on the first key press or click). Stage 8 stays open for
+your flight notes in docs/FLIGHT_NOTES.md. Then Stage 10 when the brief arrives.

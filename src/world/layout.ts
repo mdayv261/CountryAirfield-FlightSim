@@ -32,6 +32,8 @@ export const RUNWAYS = {
 
 /** Apron west of the gravel runway: 40 m east-west by 60 m north-south. */
 export const APRON: GroundRect = { cx: -60, cz: 0, sizeX: 40, sizeZ: 60 };
+/** Apron start: on the apron's east side, facing the runway (east), clear of the hangars. */
+export const APRON_SPAWN = { x: APRON.cx + 10, z: 0, headingDeg: 90 };
 
 const apronEastEdge = APRON.cx + APRON.sizeX / 2; // -40
 const taxiwayCx = apronEastEdge - TAXIWAY_WIDTH / 2; // -45, flush with apron's east edge
@@ -242,9 +244,22 @@ export const VEGETATION = {
 export const SKY = {
   zenith: 0x2f6fc0,
   horizon: 0xc4dbef,
-  /** Sun in the northern sky (southern hemisphere): azimuth from true north, elevation. */
-  sunAzimuthDeg: 25,
-  sunElevationDeg: 52,
+  /**
+   * Sun position from the time of day (sun.ts): a country field in Victoria near an equinox,
+   * so the sun crosses the northern sky, rising due east at 06:00 and setting due west at
+   * 18:00 (local solar time). Daylight only: the time-of-day setting runs 07:00–17:00.
+   * At the default 11:00 the sun is about 24° east of north, 50° up.
+   */
+  latitudeDeg: -37.5,
+  declinationDeg: 0,
+  dayStartHour: 7,
+  dayEndHour: 17,
+  /** Below this sun elevation the light reddens and dims towards its low-sun values. */
+  lowSunDeg: 25,
+  lowSunColour: 0xffc890,
+  lowSunIntensity: 1.2,
+  /** Fill light falls to this share of its noon value when the sun is low. */
+  lowSunHemiFraction: 0.75,
   sunColour: 0xfff4e0,
   domeRadius: 25000,
   fogNear: 2500,

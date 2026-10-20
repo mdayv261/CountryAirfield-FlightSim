@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { generateCloudLobes } from '../src/world/clouds';
-import { CLOUDS, DAM, VEGETATION } from '../src/world/layout';
+import { CLOUDS, DAM, SKY, VEGETATION } from '../src/world/layout';
 import { sunDirection } from '../src/world/sky';
+import { sunLight, sunPosition } from '../src/world/sun';
+import { DEFAULT_SETTINGS } from '../src/core/settings';
 import { Heightfield } from '../src/world/terrain';
 import { generateTrees, treeExcluded } from '../src/world/vegetation';
 import { rayGroundHit } from '../src/ui/measure';
@@ -65,11 +67,31 @@ describe('altocumulus layer', () => {
 });
 
 describe('sky and measuring', () => {
-  it('puts the sun in the northern sky, well up', () => {
-    const s = sunDirection();
+  it('puts the sun in the northern sky, well up, at the default time', () => {
+    const s = sunDirection(DEFAULT_SETTINGS.timeOfDay);
     expect(s.length()).toBeCloseTo(1, 9);
     expect(s.z).toBeLessThan(0); // north
     expect(s.y).toBeGreaterThan(0.5);
+  });
+
+  it('time of day moves the sun: east in the morning, due north at noon, west in the afternoon', () => {
+    const noon = sunPosition(12);
+    expect(noon.azimuthDeg).toBeCloseTo(0, 6);
+    expect(noon.elevationDeg).toBeCloseTo(90 + SKY.latitudeDeg, 6); // 52.5° at 37.5° S, equinox
+    const morning = sunPosition(8);
+    const afternoon = sunPosition(16);
+    expect(morning.azimuthDeg).toBeGreaterThan(45);
+    expect(morning.azimuthDeg).toBeLessThan(90); // north-east
+    expect(afternoon.azimuthDeg).toBeCloseTo(360 - morning.azimuthDeg, 6); // mirror image
+    expect(afternoon.elevationDeg).toBeCloseTo(morning.elevationDeg, 6);
+    // Daylight only: still clear of the horizon at the ends of the allowed range.
+    expect(sunPosition(SKY.dayStartHour).elevationDeg).toBeGreaterThan(10);
+    expect(sunPosition(SKY.dayEndHour).elevationDeg).toBeGreaterThan(10);
+    // Low sun: warmer and dimmer light.
+    const low = sunLight(sunPosition(7).elevationDeg);
+    const high = sunLight(noon.elevationDeg);
+    expect(low.intensity).toBeLessThan(high.intensity);
+    expect(low.colour.b).toBeLessThan(high.colour.b);
   });
 
   it('ray-ground hit measures the runway length exactly', () => {

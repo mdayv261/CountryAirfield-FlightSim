@@ -1,10 +1,11 @@
 import type { InstrumentReadings } from '../cockpit/instruments';
+import { stallAlphaDeg, stallWarning } from '../cockpit/stallWarning';
+import { DEFAULT_SETTINGS, type UnitSettings } from '../core/settings';
+import * as units from './units';
 import { radToDeg } from '../core/units';
 import { Gyroplane } from '../physics/Gyroplane';
 import type { PoweredAircraft } from '../physics/PoweredAircraft';
 
-/** Stall warning this many degrees below the stalling angle of attack. */
-const STALL_MARGIN_DEG = 3;
 /** Below this rotor rpm, while prerotating at low engine rpm, remind the pilot to add power. */
 const AIRCRAFT_PREROT_HINT_RPM = 300;
 const COLOUR = { normal: '#7dff9a', warning: '#ff6b6b' };
@@ -15,12 +16,15 @@ const pad = (v: number, n: number) => v.toFixed(0).padStart(n);
  * The HUD's flight lines: airspeed, altitude, heading, vertical speed, G and wind. Made from
  * the same instrument readings as the panel gauges, so the two always agree.
  */
-export function hudFlightLines(r: InstrumentReadings): string[] {
+export function hudFlightLines(r: InstrumentReadings, u: UnitSettings = DEFAULT_SETTINGS.units): string[] {
+  const alt = units.altitude(r.altitudeFt, u);
+  const agl = units.altitude(r.aglFt, u);
+  const vs = units.verticalSpeed(r.vsiFpm, u);
   return [
     `IAS  ${pad(r.iasKt, 4)} kt`,
-    `ALT  ${pad(r.altitudeFt, 5)} ft   AGL ${pad(r.aglFt, 4)} ft`,
+    `ALT  ${pad(alt.value, 5)} ${alt.unit}   AGL ${pad(agl.value, 4)} ${agl.unit}`,
     `HDG   ${Math.round(r.headingDeg % 360).toString().padStart(3, '0')}°`,
-    `VSI  ${pad(r.vsiFpm, 5)} fpm`,
+    `VSI  ${vs.unit === 'm/s' ? vs.value.toFixed(1).padStart(5) : pad(vs.value, 5)} ${vs.unit}`,
     `G    ${r.g.toFixed(1).padStart(5)}  (${r.gMax.toFixed(1)} / ${r.gMin.toFixed(1)})`,
     `WIND ${Math.round(r.windFromDeg % 360).toString().padStart(3, '0')}° / ${pad(r.windKt, 2)} kt`,
   ];
@@ -39,6 +43,8 @@ export class Hud {
   visible = true;
   /** The pilot's HUD switch. */
   enabled = true;
+  /** Display units (speeds are always knots). */
+  units: UnitSettings = DEFAULT_SETTINGS.units;
 
   constructor(parent: HTMLElement, private aircraft: PoweredAircraft) {
     this.el = document.createElement('div');
@@ -62,21 +68,18 @@ export class Hud {
 
   setAircraft(aircraft: PoweredAircraft): void {
     this.aircraft = aircraft;
-    const a = aircraft.data.aero;
     // Gyroplanes have no wing to stall: no stall warning.
-    this.stallAlpha = a ? a.alpha_deg[a.CL.indexOf(Math.max(...a.CL))] : Infinity;
+    this.stallAlpha = stallAlphaDeg(aircraft);
     this.lastText = '';
   }
 
   /** Warning messages for the current state (also shown with the HUD switched off). */
   warnings(): string[] {
     const ac = this.aircraft;
-    const s = ac.state;
     const pp = ac.powerplant;
     const g = ac.gMonitor;
-    const airborne = ac.gear.states.every((w) => !w.inContact);
     const out: string[] = [];
-    if (s.ias > 5 && radToDeg(s.alpha) > this.stallAlpha - STALL_MARGIN_DEG && airborne) out.push('** STALL **');
+    if (stallWarning(ac, this.stallAlpha)) out.push('** STALL **');
     if (g.warning) out.push('** G LIMIT **');
     if (g.overstressed) out.push('OVER-STRESS (Bksp resets)');
     if (g.overspeed) out.push('** VNE **');
@@ -103,7 +106,7 @@ export class Hud {
     const cs = ac.data.propeller?.constantSpeed;
     const lines: string[] = [];
     if (this.enabled) {
-      lines.push(ac.data.name, ...hudFlightLines(r), `RPM  ${pad(r.engineRpm, 5)}${pp.running ? '' : ' OFF'}`);
+      lines.push(ac.data.name, ...hudFlightLines(r, this.units), `RPM  ${pad(r.engineRpm, 5)}${pp.running ? '' : ' OFF'}`);
       if (ac instanceof Gyroplane) {
         const prerotating = ac.pilot.prerotator > 0 && pp.running;
         const lowPower = prerotating && ac.prerotatorEngagement() < 0.8 && ac.rotor.rpm < AIRCRAFT_PREROT_HINT_RPM;
@@ -112,11 +115,17 @@ export class Hud {
         if (ac.pilot.prerotator > 0 && !pp.running) lines.push('  engine off: press E to start');
       }
       if (cs) {
-        lines.push(`MAP  ${r.mapInHg.toFixed(1).padStart(5)} inHg`);
+        const map = units.pressure(r.mapInHg, this.units);
+        lines.push(`MAP  ${map.value.toFixed(map.unit === 'hPa' ? 0 : 1).padStart(5)} ${map.unit}`);
         lines.push(`PROP ${pad(pp.out.governorRpm, 5)} rpm set`);
       }
-      lines.push(`THR  ${pad(r.throttle * 100, 4)} %`, `FUEL ${r.fuelL.toFixed(1).padStart(5)} L`);
-      if (r.chtC !== null) lines.push(`CHT  ${pad(r.chtC, 4)} °C   EGT ${pad(r.egtC ?? 0, 4)} °C`);
+      const fuel = units.fuel(r.fuelL, this.units);
+      lines.push(`THR  ${pad(r.throttle * 100, 4)} %`, `FUEL ${fuel.value.toFixed(1).padStart(5)} ${fuel.unit}`);
+      if (r.chtC !== null) {
+        const cht = units.temperature(r.chtC, this.units);
+        const egt = units.temperature(r.egtC ?? 0, this.units);
+        lines.push(`CHT  ${pad(cht.value, 4)} ${cht.unit}   EGT ${pad(egt.value, 4)} ${egt.unit}`);
+      }
       // Slip ball as text, like the inclinometer: the ball sits where apparent gravity points.
       const ballPos = Math.round(Math.max(-3, Math.min(3, r.slipDeg / 3)));
       const ball = '(' + [-3, -2, -1, 0, 1, 2, 3].map((i) => (i === ballPos ? 'o' : i === 0 ? '|' : '-')).join('') + ')';

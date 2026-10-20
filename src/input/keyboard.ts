@@ -3,8 +3,16 @@ export class Keyboard {
   private readonly held = new Set<string>();
   private readonly actions = new Map<string, () => void>();
 
+  /**
+   * While this returns true (a menu is open), keys go to the menu, not the sim: no held keys
+   * and no actions, except the ones listed in `alwaysActive` (Escape to close the menu).
+   */
+  blocked: () => boolean = () => false;
+  readonly alwaysActive = new Set<string>(['Escape']);
+
   constructor(target: Window = window) {
     target.addEventListener('keydown', (e) => {
+      if (this.blocked() && !this.alwaysActive.has(e.code)) return;
       if (!e.repeat) this.actions.get(e.code)?.();
       this.held.add(e.code);
     });
@@ -19,6 +27,7 @@ export class Keyboard {
   }
 
   isDown(code: string): boolean {
+    if (this.blocked()) return false;
     return this.held.has(code);
   }
 }

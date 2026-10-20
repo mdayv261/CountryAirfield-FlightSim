@@ -224,6 +224,26 @@
       }
     ]
   },
+  "sound": {
+    "engine": {
+      "harmonics": [1, 0.75, 0.6, 0.45, 0.35, 0.28, 0.2, 0.15],
+      "loudness": 0.85,
+      "noise": 0.45,
+      "noiseBandHz": [900, 2600],
+      "pulse": 0.85,
+      "brightnessHz": [1800, 5500],
+      "throb": 0
+    },
+    "beltWhine": {
+      "teethPerRev": 28,
+      "level": 0.08
+    },
+    "prop": {
+      "level": 0.35,
+      "blades": 2
+    },
+    "cockpit": "open"
+  },
   "limits": {
     "vne_mps": 35.497
   },
@@ -253,6 +273,7 @@
     "Wing rigging incidence 1.6 deg (user check 2026-10-19): fuselage attitude reads 0 deg in level flight at 75% throttle (~47 kt), about +10 deg in the full-power climb at Vy and about -10 deg in a 45 kt idle descent.",
     "Engine response halved at the user's request (2026-10-19): crank 0.006 and prop 0.125 kg m2 inertia, carburettor lag 0.075 s. Idle to full rpm about 1.1 s static and 0.65 s at 45 kt; full to idle about 1.3 s and 0.8 s.",
     "Tuned (Stage 4) so cruise at 75% power ~47 kt and full-power level speed stays under the Part 103 limit of 55 kt.",
-    "Panel (Stage 7): instrument pod ahead of the stick. Gauge markings assumed (no published Air-Bike panel): green 24-60 kt, red line Vne 69 kt; Hirth F-33 red line 6,500 rpm, CHT limit 250 C, EGT limit 650 C (assumed, check hirthengines.com)."
+    "Panel (Stage 7): instrument pod ahead of the stick. Gauge markings assumed (no published Air-Bike panel): green 24-60 kt, red line Vne 69 kt; Hirth F-33 red line 6,500 rpm, CHT limit 250 C, EGT limit 650 C (assumed, check hirthengines.com).",
+    "Sound (Stage 9): single-cylinder 2-stroke, one firing per revolution (~100 Hz at 6,000 rpm), bright and buzzy with a crackling exhaust; whine from the 2.5:1 toothed reduction belt; open cockpit."
   ]
 }

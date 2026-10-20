@@ -1,12 +1,10 @@
 import * as THREE from 'three';
 import { SKY } from './layout';
+import { sunVector } from './sun';
 
-/** Unit vector pointing at the sun, from SKY azimuth (clockwise from north) and elevation. */
-export function sunDirection(): THREE.Vector3 {
-  const az = (SKY.sunAzimuthDeg * Math.PI) / 180;
-  const el = (SKY.sunElevationDeg * Math.PI) / 180;
-  // North is -Z, east is +X.
-  return new THREE.Vector3(Math.sin(az) * Math.cos(el), Math.sin(el), -Math.cos(az) * Math.cos(el));
+/** Unit vector pointing at the sun at a time of day (hours, local solar time). */
+export function sunDirection(hour: number): THREE.Vector3 {
+  return sunVector(hour);
 }
 
 /**
@@ -15,13 +13,13 @@ export function sunDirection(): THREE.Vector3 {
  * infinitely far away and never needs to follow the camera. It is drawn first with no
  * depth test, so everything else paints over it.
  */
-export function createSky(): THREE.Mesh {
+export function createSky(hour: number): THREE.Mesh {
   const material = new THREE.ShaderMaterial({
     uniforms: {
       zenith: { value: new THREE.Color(SKY.zenith) },
       horizon: { value: new THREE.Color(SKY.horizon) },
       sunColour: { value: new THREE.Color(SKY.sunColour) },
-      sunDir: { value: sunDirection() },
+      sunDir: { value: sunDirection(hour) },
     },
     vertexShader: /* glsl */ `
       varying vec3 vDir;

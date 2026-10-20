@@ -4,6 +4,7 @@ import { createBuildings, towerRoofTop, type Footprint } from './buildings';
 import { createClouds } from './clouds';
 import { SKY, TOWER } from './layout';
 import { createSky, sunDirection } from './sky';
+import { sunLight, sunPosition } from './sun';
 import { createDamWater, createSkirt, createTerrainMesh, Heightfield } from './terrain';
 import { createVegetation, generateTrees } from './vegetation';
 import { Windsock } from './windsock';
@@ -19,18 +20,32 @@ export interface WorldScene {
   windsock: Windsock;
   footprints: Footprint[];
   axisMarker: THREE.Object3D;
+  /** Move the sun to a time of day (hours, local solar time): light, shadows and sky glow. */
+  setTimeOfDay(hour: number): void;
 }
 
-export function createScene(aspect: number): WorldScene {
+export function createScene(aspect: number, hour: number): WorldScene {
   const scene = new THREE.Scene();
   const horizon = new THREE.Color(SKY.horizon);
   scene.background = horizon;
   // Fog in the horizon colour blends distant ground into the sky's horizon band.
   scene.fog = new THREE.Fog(horizon, SKY.fogNear, SKY.fogFar);
-  scene.add(createSky());
+  const sky = createSky(hour);
+  scene.add(sky);
 
-  scene.add(new THREE.HemisphereLight(SKY.hemiSky, SKY.hemiGround, SKY.hemiIntensity));
-  scene.add(createSun());
+  const hemi = new THREE.HemisphereLight(SKY.hemiSky, SKY.hemiGround, SKY.hemiIntensity);
+  scene.add(hemi);
+  const sun = createSun();
+  scene.add(sun);
+  const setTimeOfDay = (h: number) => {
+    placeSun(sun, h);
+    (sky.material as THREE.ShaderMaterial).uniforms.sunDir.value.copy(sunDirection(h));
+    const light = sunLight(sunPosition(h).elevationDeg);
+    sun.color.copy(light.colour);
+    sun.intensity = light.intensity;
+    hemi.intensity = SKY.hemiIntensity * light.hemiFactor;
+  };
+  setTimeOfDay(hour);
 
   const heightfield = new Heightfield();
   scene.add(createTerrainMesh(heightfield), createSkirt(), createDamWater());
@@ -51,24 +66,27 @@ export function createScene(aspect: number): WorldScene {
   scene.add(axisMarker);
 
   const camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 40000);
-  return { scene, camera, heightfield, windsock, footprints, axisMarker };
+  return { scene, camera, heightfield, windsock, footprints, axisMarker, setTimeOfDay };
 }
 
 /** Directional sun from the northern sky, casting shadows over the airfield area. */
 function createSun(): THREE.DirectionalLight {
   const sun = new THREE.DirectionalLight(SKY.sunColour, SKY.sunIntensity);
-  const centre = new THREE.Vector3(...SKY.shadowCentre);
   const r = SKY.shadowHalfSize;
-  sun.target.position.copy(centre);
-  sun.position.copy(centre).addScaledVector(sunDirection(), 2 * r);
   sun.castShadow = true;
   sun.shadow.mapSize.set(SKY.shadowMapSize, SKY.shadowMapSize);
   Object.assign(sun.shadow.camera, { left: -r, right: r, top: r, bottom: -r, near: 1, far: 4 * r });
   sun.shadow.bias = -0.0005;
   sun.shadow.normalBias = 0.3;
   sun.add(sun.target); // keep the target in the scene graph so its matrix updates
-  sun.target.position.sub(sun.position);
   return sun;
+}
+
+/** Put the sun light up-sun of the shadowed area, aimed at its centre. */
+function placeSun(sun: THREE.DirectionalLight, hour: number): void {
+  const centre = new THREE.Vector3(...SKY.shadowCentre);
+  sun.position.copy(centre).addScaledVector(sunDirection(hour), 2 * SKY.shadowHalfSize);
+  sun.target.position.copy(centre).sub(sun.position); // target is a child of the light
 }
 
 /**
