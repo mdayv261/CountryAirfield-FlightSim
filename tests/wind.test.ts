@@ -115,4 +115,15 @@ describe('gusts and turbulence', () => {
     for (let i = 0; i < 1000; i++) w.update(dt);
     expect(w.velocityAt(10).length()).toBe(0);
   });
+
+  it('gust strength and turbulence level can be set directly (keyboard ; \' and /)', () => {
+    const w = new WindModel();
+    w.applyPreset(WIND_PRESETS[0]); // calm
+    w.setGust(7);
+    expect(mpsToKt(w.gustAmplitude)).toBeCloseTo(7, 6);
+    w.setGust(-3);
+    expect(w.gustAmplitude).toBe(0);
+    expect(w.turbulence).toBe('none');
+    expect([w.nextTurbulence(), w.nextTurbulence(), w.nextTurbulence(), w.nextTurbulence()]).toEqual(['light', 'moderate', 'severe', 'none']);
+  });
 });

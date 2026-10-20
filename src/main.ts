@@ -59,6 +59,8 @@ const DEFAULT_PRESET = 1; // light northerly: a gentle headwind on runway 36 for
 let presetIndex = DEFAULT_PRESET;
 physics.wind.applyPreset(WIND_PRESETS[presetIndex]);
 const WIND_STEP_KT = 1;
+const GUST_STEP_KT = 1;
+const GUST_MAX_KT = 20;
 const WIND_STEP_DEG = 10;
 const WIND_MAX_KT = 40;
 const adjustWind = (dDeg: number, dKt: number) => {
@@ -247,7 +249,7 @@ const loop = new GameLoop({
 
 function statusLines(): string[] {
   const w = physics.wind;
-  const gust = w.gustAmplitude > 0 ? ` gusts +${mpsToKt(w.gustAmplitude).toFixed(0)} kt` : '';
+  const gust = w.gustAmplitude > 0 ? `, gusts +${mpsToKt(w.gustAmplitude).toFixed(0)} kt` : ', no gusts';
   const now = mpsToKt(windsockAir.length()).toFixed(0);
   const lines = [`wind preset: ${WIND_PRESETS[presetIndex]?.name ?? 'custom'}${gust}, turbulence ${w.turbulence}, sock ${now} kt`];
   const c = input.controls;
@@ -312,6 +314,18 @@ keyboard.onPress('BracketLeft', customWind(0, -WIND_STEP_KT));
 keyboard.onPress('BracketRight', customWind(0, WIND_STEP_KT));
 keyboard.onPress('Comma', customWind(-WIND_STEP_DEG, 0));
 keyboard.onPress('Period', customWind(WIND_STEP_DEG, 0));
+// Gusts (strongest gust above the mean wind) and turbulence level, next to the wind keys.
+const adjustGust = (dKt: number) => () => {
+  const kt = Math.round(mpsToKt(physics.wind.gustAmplitude) + dKt);
+  physics.wind.setGust(THREE.MathUtils.clamp(kt, 0, GUST_MAX_KT));
+  presetIndex = -1;
+};
+keyboard.onPress('Semicolon', adjustGust(-GUST_STEP_KT));
+keyboard.onPress('Quote', adjustGust(GUST_STEP_KT));
+keyboard.onPress('Slash', () => {
+  physics.wind.nextTurbulence();
+  presetIndex = -1;
+});
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -320,7 +334,7 @@ window.addEventListener('resize', () => {
 });
 // Keep keys like arrows and PageUp from scrolling the page while flying.
 window.addEventListener('keydown', (e) => {
-  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End', 'Space', 'Tab'].includes(e.code)) e.preventDefault();
+  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End', 'Space', 'Tab', 'Slash', 'Quote'].includes(e.code)) e.preventDefault();
 });
 
 // Handy for inspection from the browser console.

@@ -44,6 +44,8 @@
     boosts the rudder and elevator).
   - Test-pilot technique added: ground-track (crab) following on circuit legs, wing-low on short final and in the
     flare, steering back to the centreline on the ground, gyro stick into wind, prerotation on the brakes with pedals.
+  - Wind keys (2026-10-20): N preset · [ ] speed ±1 kt · , . direction ±10° · ; ' gusts ±1 kt (0–20) · / turbulence
+    none → light → moderate → severe; all on the on-screen help (H). The status panel shows gusts and turbulence.
   - `docs/FLIGHT_NOTES.md`: template for the user's test-flight notes; each will be resolved there.
 - **Stage 7 cockpits, HUD and views** (2026-10-20):
   - `src/cockpit/instruments.ts`: one set of indicated values (IAS, altitude, AGL, VSI with 1 s lag, true heading,

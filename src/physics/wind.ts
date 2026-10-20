@@ -54,6 +54,18 @@ export class WindModel {
     this.speed = Math.max(0, ktToMps(speedKt));
   }
 
+  /** Set the strongest gust increment, kt (0 for a steady wind). */
+  setGust(gustKt: number): void {
+    this.gustAmplitude = Math.max(0, ktToMps(gustKt));
+  }
+
+  /** Step to the next turbulence level: none → light → moderate → severe → none. */
+  nextTurbulence(): TurbulenceLevel {
+    const levels = Object.keys(TURBULENCE_SIGMA_MPS) as TurbulenceLevel[];
+    this.turbulence = levels[(levels.indexOf(this.turbulence) + 1) % levels.length];
+    return this.turbulence;
+  }
+
   applyPreset(p: WindPreset): void {
     this.setSteady(p.fromDeg, p.speedKt);
     this.gustAmplitude = ktToMps(p.gustKt);
