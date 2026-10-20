@@ -51,7 +51,7 @@ export class Hud {
     Object.assign(this.el.style, {
       position: 'fixed',
       left: '8px',
-      top: '64px',
+      top: '84px',
       padding: '8px 12px',
       font: 'bold 15px/1.5 ui-monospace, Menlo, monospace',
       color: COLOUR.normal,

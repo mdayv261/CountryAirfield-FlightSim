@@ -18,7 +18,7 @@ export interface InspectInfo {
 }
 
 const HELP =
-  'FLY: Tab aircraft · arrows stick · Z/C rudder · U auto-rudder · +/- throttle · Home/End prop rpm · B brakes · Q prerotator (gyro) · E engine · 1 cockpit 2 chase 3 tower 4 fly-by 5 free (V cycles; hat/drag looks) · I HUD · 7 8 9 0 spawn gravel36/grass36/gravel18/grass18 · Bksp reset · Esc MENU (aircraft, start, wind, time, controls, units, sound)\n' +
+  'FLY: Tab aircraft · arrows stick · Z/C rudder · U auto-rudder · +/- throttle · Home/End prop rpm · B brakes · Q prerotator (gyro) · E engine · 1 cockpit 2 chase 3 tower 4 fly-by 5 free (V cycles; hat/drag looks) · I HUD · 7 8 9 0 spawn gravel36/grass36/gravel18/grass18 · Bksp reset · G reset to apron · L reset to threshold · Esc MENU (aircraft, start, wind, time, controls, units, sound)\n' +
   'FREE CAM: drag look · WASD move · R/F up/down · Shift fast · wheel speed · 1-6 viewpoints · M measure · T throw test block\n' +
   'WIND: N next preset · [ ] speed −/+ 1 kt · , . direction −/+ 10° (from 090 or 270 = crosswind on 36/18) · ; \' gusts −/+ 1 kt · / turbulence none/light/moderate/severe\n' +
   'OTHER: K keyboard flight · J mouse stick · O controls · X axes · P pause · H help';

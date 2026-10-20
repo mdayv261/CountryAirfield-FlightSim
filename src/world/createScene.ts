@@ -22,6 +22,8 @@ export interface WorldScene {
   axisMarker: THREE.Object3D;
   /** Move the sun to a time of day (hours, local solar time): light, shadows and sky glow. */
   setTimeOfDay(hour: number): void;
+  /** Sun shadow map size, texels; 0 turns sun shadows off (graphics quality). */
+  setShadowMapSize(size: number): void;
 }
 
 export function createScene(aspect: number, hour: number): WorldScene {
@@ -46,6 +48,14 @@ export function createScene(aspect: number, hour: number): WorldScene {
     hemi.intensity = SKY.hemiIntensity * light.hemiFactor;
   };
   setTimeOfDay(hour);
+  const setShadowMapSize = (size: number) => {
+    sun.castShadow = size > 0;
+    if (size > 0 && sun.shadow.mapSize.x !== size) {
+      sun.shadow.mapSize.set(size, size);
+      sun.shadow.map?.dispose();
+      sun.shadow.map = null; // rebuilt at the new size on the next render
+    }
+  };
 
   const heightfield = new Heightfield();
   scene.add(createTerrainMesh(heightfield), createSkirt(), createDamWater());
@@ -66,7 +76,7 @@ export function createScene(aspect: number, hour: number): WorldScene {
   scene.add(axisMarker);
 
   const camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 40000);
-  return { scene, camera, heightfield, windsock, footprints, axisMarker, setTimeOfDay };
+  return { scene, camera, heightfield, windsock, footprints, axisMarker, setTimeOfDay, setShadowMapSize };
 }
 
 /** Directional sun from the northern sky, casting shadows over the airfield area. */

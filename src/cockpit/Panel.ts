@@ -10,7 +10,11 @@ const PANEL_DEPTH_M = 0.03;
 /** Pod mounting post: aluminium tube radius, m, and colour. */
 const POST_RADIUS_M = 0.015;
 const POST_COLOUR = 0xb8bec4;
-/** Redraw rate when the panel is not being looked at closely (outside views), Hz. */
+/**
+ * Redraw rates, Hz: in the cockpit 30 (needles move smoothly; redrawing every display frame
+ * cost about 0.6 ms of CPU for no visible gain), and a few times a second from outside.
+ */
+const CLOSE_REDRAW_HZ = 30;
 const FAR_REDRAW_HZ = 4;
 
 /**
@@ -58,10 +62,10 @@ export class Panel {
     }
   }
 
-  /** Redraw the gauges: every frame when close (cockpit view), a few times a second otherwise. */
+  /** Redraw the gauges: 30 times a second when close (cockpit view), a few times a second otherwise. */
   update(r: InstrumentReadings, dt: number, close: boolean): void {
     this.sinceDraw += dt;
-    if (!close && this.sinceDraw < 1 / FAR_REDRAW_HZ) return;
+    if (this.sinceDraw < 1 / (close ? CLOSE_REDRAW_HZ : FAR_REDRAW_HZ)) return;
     this.sinceDraw = 0;
     this.draw(r);
   }

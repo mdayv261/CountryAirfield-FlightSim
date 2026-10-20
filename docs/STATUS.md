@@ -1,7 +1,7 @@
 # Project Status
 
-**Current stage:** 9 – Sound and menus (complete; exit checks pass 2026-10-20). Stage 8 flight notes deferred by the user (2026-10-20): to be added to docs/FLIGHT_NOTES.md later and resolved then.
-**Next stage:** 10 (awaiting the brief)
+**Current stage:** 10 – Polish and packaging (complete 2026-10-20: 60+ fps, production build runs from npm run preview). Stage 8 flight notes deferred by the user (2026-10-20): to be added to docs/FLIGHT_NOTES.md later and resolved then.
+**Next stage:** none planned (Stage 8 flight notes deferred by the user)
 
 ## What works
 - Vite 8 + TypeScript 7 (strict) + Three.js r186 + Vitest 4. Scripts: `npm run dev`, `npm test`, `npm run build`, `npm run preview`, `npm run typecheck`.
@@ -26,6 +26,19 @@
   - Sky: gradient dome shader with a sun disc and glow (sun azimuth 25°, elevation 52°, northern sky), with matching horizon fog.
   - Altocumulus: rows of lumpy cloudlets (6 lobes each, instanced), 22 km square layer, every lobe between 3,000 and 4,500 m.
   - Sun shadows (2048 map) over an 800 m square around the airfield. Logarithmic depth buffer.
+- **Stage 10 polish and packaging** (2026-10-20):
+  - Profiled in Chrome on the Mac mini M4 at 2560x1260: CPU 1.6–3 ms per frame (physics 0.2, frame 0.4–1.0, render call
+    1.1–1.7); full CPU+GPU render cost ~3.5 ms, forced to finish. The renderer is fill-bound: shadows ~1.5 ms, 75 %
+    resolution saves ~0.8 ms; triangle count (terrain 320k, clouds 263k, trees 128k) costs little. Changes: cockpit
+    panel redrawn at 30 Hz, not every frame (cockpit CPU 2.7 → 1.6 ms); Graphics setting (menu) Auto/High/Medium/Low,
+    Auto stepping down shadow map 2048 → 1024, render scale 0.85, 0.7, then no shadows if the frame rate stays below
+    60 (`src/ui/quality.ts`, only ever down within a session). Frame-rate overlay shows CPU time split and graphics level.
+  - Pause banner (P); G resets to the apron, L to the last runway threshold used; menu buttons for both and for pause.
+  - README.md (install, run, build, preview, tests, layout) and docs/PILOT_GUIDE.md (controls, views, wind, instruments,
+    procedures and speeds for each aircraft, gyro hazards).
+  - Production build: `npm run build` → dist/ (index.html + one 725 kB script, 199 kB gzipped, relative paths, runs
+    from any folder or path on a static server). `npm run preview`: 75 fps (13.3 ms, p95 ≤ 15 ms) in every view and
+    aircraft, sound running, no console errors.
 - **Stage 9 sound and menus** (2026-10-20):
   - Sound (`src/audio`): Web Audio synthesis driven by the physics (`soundModel.ts`, pure and tested; `SoundSystem.ts`).
     Engine note at the firing frequency (rpm/60 x cylinders x 2/strokes) with each engine's harmonic mix from its data
@@ -252,7 +265,7 @@
 - Measured in Chrome on the Mac mini M4 (2560x1440 display at 75 Hz): 75 fps, mean frame 13.34 ms,
   p95 13.6 ms, max 14.4 ms over 300 frames, so no dropped frames. The browser locks to the display's 75 Hz refresh.
   Physics holds 120 Hz. P pauses (physics 0 Hz, render continues) and resumes cleanly. No console errors.
-- Tests: 259 passing (Stage 9 added settings, units, sun and sound-model suites; Stage 8 added the flight-test programme and gust/turbulence/crosswind handling suites; Stage 7 added engine-temperature, instrument, HUD/gauge agreement, gauge geometry and view suites; Stage 6 added rotor, gyro performance and static-friction tests; Stage 5 added Decathlon performance, aerobatics, propeller-effects suites; engine response, pitch-attitude check, auto-rudder and the joystick profile added since; Stage 4 added aero, powerplant and Air-Bike performance/circuit suites; Stage 3 added rigid body, atmosphere, wind, gear and input suites). Highlights: free fall matches ½gt²;
+- Tests: 263 passing (Stage 10 added graphics-quality tests; Stage 9 added settings, units, sun and sound-model suites; Stage 8 added the flight-test programme and gust/turbulence/crosswind handling suites; Stage 7 added engine-temperature, instrument, HUD/gauge agreement, gauge geometry and view suites; Stage 6 added rotor, gyro performance and static-friction tests; Stage 5 added Decathlon performance, aerobatics, propeller-effects suites; engine response, pitch-attitude check, auto-rudder and the joystick profile added since; Stage 4 added aero, powerplant and Air-Bike performance/circuit suites; Stage 3 added rigid body, atmosphere, wind, gear and input suites). Highlights: free fall matches ½gt²;
   a torque-free tumble (with the intermediate-axis flip) conserves energy to 1e-6; an undamped strut bounce returns to its
   release height within 1%; all three aircraft settle at rest on their wheels (loads sum to weight, struts compress by load/k,
   taildraggers 8–13° nose-up); braking stops in v²/(2μg) on gravel and grass; rolling coast distance follows the rolling
@@ -329,5 +342,4 @@
 - Clouds are not fogged and stop at the layer edge (11 km out), so at high altitude the edge of the layer can be seen.
 
 ## Next step
-Try the menu (Esc) and listen to each aircraft (sound starts on the first key press or click). Stage 8's flight notes are
-deferred: when you add notes to docs/FLIGHT_NOTES.md, each will be resolved there. Then Stage 10 when the brief arrives.
+All stages built. Open items: your Stage 8 flight notes (docs/FLIGHT_NOTES.md) whenever you add them.

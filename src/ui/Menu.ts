@@ -3,7 +3,7 @@ import { SETTING_LIMITS, START_POSITIONS, type Settings } from '../core/settings
 import { WIND_PRESETS, type TurbulenceLevel } from '../physics/windPresets';
 
 /** What changed, so the sim can apply just that (respawn only for aircraft and start position). */
-export type MenuChange = 'aircraft' | 'start' | 'wind' | 'time' | 'units' | 'sound' | 'controls';
+export type MenuChange = 'aircraft' | 'start' | 'wind' | 'time' | 'units' | 'sound' | 'controls' | 'graphics';
 
 const STYLE = `
 .menu { position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
@@ -42,7 +42,14 @@ export class Menu {
     parent: HTMLElement,
     private readonly settings: Settings,
     private readonly onChange: (what: MenuChange) => void,
-    private readonly actions: { openControlMapping: () => void; resetDefaults: () => void },
+    private readonly actions: {
+      openControlMapping: () => void;
+      resetDefaults: () => void;
+      resetToApron: () => void;
+      resetToThreshold: () => void;
+      togglePause: () => void;
+      qualityName: () => string;
+    },
   ) {
     const style = document.createElement('style');
     style.textContent = STYLE;
@@ -127,13 +134,17 @@ export class Menu {
             <label>Manifold pressure <select id="u-map">${opt('inHg', 'inHg', s.units.pressure === 'inHg')}${opt('hPa', 'hPa', s.units.pressure === 'hPa')}</select></label>
             <div class="note">Airspeed is always in knots. Panel gauges keep their own markings.</div>
           </fieldset>
+          <fieldset><legend>Graphics</legend>
+            <label>Quality <select id="gfx">${opt('auto', 'Auto (holds 60 fps)', s.graphics === 'auto')}${opt('high', 'High', s.graphics === 'high')}${opt('medium', 'Medium', s.graphics === 'medium')}${opt('low', 'Low', s.graphics === 'low')}</select></label>
+            <div class="note">Now: ${this.actions.qualityName()}. Auto lowers shadow detail, then resolution, if the frame rate drops below 60.</div>
+          </fieldset>
           <fieldset><legend>Sound</legend>
             <label>Volume ${range('vol', SETTING_LIMITS.volume, 0.05, s.sound.volume)} <span class="val" id="volv">${Math.round(s.sound.volume * 100)} %</span></label>
             ${check('mute', 'Mute', s.sound.muted)}
             <div class="note">Sound starts with your first key press or click.</div>
           </fieldset>
         </div>
-        <div class="row"><button id="defaults">Reset to defaults</button><button class="primary" id="fly">Fly</button></div>
+        <div class="row"><button id="defaults">Reset to defaults</button><button id="apron">Reset to apron (G)</button><button id="threshold">Reset to threshold (L)</button><button id="pause">Pause (P)</button><button class="primary" id="fly">Fly</button></div>
       </div>`;
     this.wire();
   }
@@ -230,6 +241,23 @@ export class Menu {
     $('defaults').addEventListener('click', () => {
       this.actions.resetDefaults();
       this.render();
+    });
+    on('gfx', 'change', (el) => {
+      s.graphics = el.value as Settings['graphics'];
+      this.onChange('graphics');
+      this.render();
+    });
+    $('apron').addEventListener('click', () => {
+      this.actions.resetToApron();
+      this.close();
+    });
+    $('threshold').addEventListener('click', () => {
+      this.actions.resetToThreshold();
+      this.close();
+    });
+    $('pause').addEventListener('click', () => {
+      this.close();
+      this.actions.togglePause();
     });
     $('fly').addEventListener('click', () => this.close());
   }

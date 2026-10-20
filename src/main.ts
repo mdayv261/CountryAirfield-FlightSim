@@ -33,6 +33,7 @@ import type { AircraftId } from './aircraft';
 import { SoundSystem } from './audio/SoundSystem';
 import { outsideHearing } from './audio/soundModel';
 import { Menu, type MenuChange } from './ui/Menu';
+import { AutoQuality, levelFor, QUALITY_LEVELS } from './ui/quality';
 
 const container = document.getElementById('app')!;
 
@@ -40,7 +41,8 @@ const container = document.getElementById('app')!;
 // so distant runway surfaces and terrain don't flicker against each other.
 const renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
 // Cap pixel ratio at 2: Retina at 3x costs a lot of fill rate for little visible gain.
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+const MAX_PIXEL_RATIO = 2;
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -152,10 +154,13 @@ const SPAWNS: Array<{ name: StartPosition; x: number; z: number; heading: number
   { name: 'grass 18', x: RUNWAYS.grass.cx, z: -half, heading: 180 },
 ];
 let spawnIndex = Math.max(0, START_POSITIONS.indexOf(settings.start));
+/** The runway threshold L resets to: the last one used (gravel 36 at first). */
+let lastThreshold = Math.max(1, spawnIndex);
 const spawn = (i: number) => {
   spawnIndex = i;
   const s = SPAWNS[i];
   settings.start = s.name;
+  if (i > 0) lastThreshold = i;
   aircraft.resetOnGround(s.x, s.z, s.heading, groundAt(s.x, s.z));
   input.keyboardControls.state.throttle = 0;
   aircraftCam.reset();
@@ -213,6 +218,44 @@ const applyControls = () => {
 applyControls();
 hud.units = settings.units;
 
+// Graphics quality: a fixed level, or auto (steps down by itself below 60 fps).
+const autoQuality = new AutoQuality();
+let qualityLevel = 0;
+const applyQuality = (level: number) => {
+  qualityLevel = level;
+  const q = QUALITY_LEVELS[level];
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO) * q.renderScale);
+  world.setShadowMapSize(q.shadowMapSize);
+};
+const applyGraphics = () => {
+  autoQuality.level = levelFor(settings.graphics);
+  autoQuality.hold();
+  applyQuality(autoQuality.level);
+};
+applyGraphics();
+
+// Pause banner (P, or the menu's Pause button).
+const pauseBanner = document.createElement('div');
+Object.assign(pauseBanner.style, {
+  position: 'fixed', top: '38%', left: '50%', transform: 'translateX(-50%)', padding: '10px 24px',
+  font: 'bold 28px/1.2 system-ui, sans-serif', color: '#fff', background: 'rgba(0, 0, 0, 0.5)',
+  borderRadius: '8px', pointerEvents: 'none', zIndex: '20', display: 'none', textAlign: 'center',
+});
+pauseBanner.innerHTML = 'PAUSED<div style="font-size:14px;font-weight:normal;margin-top:4px">P to resume · Esc menu</div>';
+container.appendChild(pauseBanner);
+
+/** Reset to the apron (G), or to the last runway threshold used (L). */
+const resetToApron = () => {
+  spawn(0);
+  autoQuality.hold();
+  saveNow();
+};
+const resetToThreshold = () => {
+  spawn(lastThreshold);
+  autoQuality.hold();
+  saveNow();
+};
+
 // The settings menu (Esc). It pauses the flight while open; keys go to it, not the sim.
 const menu = new Menu(
   container,
@@ -225,12 +268,17 @@ const menu = new Menu(
     else if (what === 'units') hud.units = settings.units;
     else if (what === 'sound') sound.setVolume(settings.sound.volume, settings.sound.muted);
     else if (what === 'controls') applyControls();
+    else if (what === 'graphics') applyGraphics();
     saveNow();
   },
   {
     openControlMapping: () => {
       if (!calibration.visible) calibration.toggle();
     },
+    resetToApron,
+    resetToThreshold,
+    togglePause: () => loop.togglePause(),
+    qualityName: () => QUALITY_LEVELS[qualityLevel].name,
     resetDefaults: () => {
       Object.assign(settings, structuredClone(DEFAULT_SETTINGS));
       applyWind();
@@ -238,6 +286,7 @@ const menu = new Menu(
       hud.units = settings.units;
       sound.setVolume(settings.sound.volume, settings.sound.muted);
       applyControls();
+      applyGraphics();
       selectAircraft(Math.max(0, FLEET_IDS.indexOf(settings.aircraft)));
       spawn(Math.max(0, START_POSITIONS.indexOf(settings.start)));
       saveNow();
@@ -245,13 +294,18 @@ const menu = new Menu(
   },
 );
 keyboard.blocked = () => menu.isOpen;
-keyboard.onPress('Escape', () => menu.toggle());
+keyboard.onPress('Escape', () => {
+  menu.toggle();
+  autoQuality.hold();
+});
 // Browsers only allow sound after a user gesture: start it on the first key press or click.
 for (const ev of ['keydown', 'pointerdown'] as const) window.addEventListener(ev, () => sound.unlock());
 const toAircraft = new THREE.Vector3();
 let lastDistance = 0;
 
 let stepsThisFrame = 0;
+/** CPU time this frame, ms: physics steps, the rest of the frame, and the render call. */
+const cpu = { physicsMs: 0, frameMs: 0, renderMs: 0 };
 let lastFrameMs = performance.now();
 const loop = new GameLoop({
   step: (dt) => {
@@ -275,12 +329,15 @@ const loop = new GameLoop({
       });
       Object.assign(block.controls, { throttle: 0, pedals: 0, brakeLeft: 0, brakeRight: 0 });
     }
+    const t0 = performance.now();
     physics.step(dt);
+    cpu.physicsMs += performance.now() - t0;
     stepsThisFrame++;
   },
   render: (alpha) => {
     // Camera, input and overlays run in real time, independent of physics pause.
     const now = performance.now();
+    const frameStart = now;
     const dt = Math.min((now - lastFrameMs) / 1000, 0.1);
     lastFrameMs = now;
     input.update(dt);
@@ -303,14 +360,24 @@ const loop = new GameLoop({
     lastDistance = distance;
     const outside = outsideHearing(distance, view === 'flyby' || view === 'tower' ? closing : 0);
     sound.setPaused(loop.paused || menu.isOpen);
+    pauseBanner.style.display = loop.paused && !menu.isOpen ? 'block' : 'none';
+    // Auto quality judges real flying frames only (not paused, not in the menu).
+    if (settings.graphics === 'auto' && !loop.paused && !menu.isOpen && autoQuality.frame(dt * 1000)) {
+      applyQuality(autoQuality.level);
+      console.info(`Graphics: frame rate below 60 fps, quality now "${QUALITY_LEVELS[autoQuality.level].name}"`);
+    }
     sound.update(aircraft, view === 'cockpit' ? { inCockpit: true, gain: 1, doppler: 1 } : { inCockpit: false, ...outside });
     // The windsock feels the same wind as everything else, at its mast-top height.
     windsock.update(physics.windAt(windsockTop, windsockAir), now / 1000);
     if (blockMesh.object.parent) blockMesh.update(alpha);
 
+    const drawStart = performance.now();
     renderer.render(scene, camera);
-    overlay.frame(stepsThisFrame, loop.paused);
+    cpu.renderMs = performance.now() - drawStart;
+    cpu.frameMs = drawStart - frameStart;
+    overlay.frame(stepsThisFrame, loop.paused, cpu, `${settings.graphics}: ${QUALITY_LEVELS[qualityLevel].name}`);
     stepsThisFrame = 0;
+    cpu.physicsMs = 0;
     inspect.update({
       ...camera.position,
       headingDeg: freeCam.headingDeg,
@@ -372,6 +439,8 @@ for (let k = 0; k < 6; k++) {
 }
 keyboard.onPress('KeyE', () => (aircraft.powerplant.running ? aircraft.powerplant.stop() : aircraft.powerplant.start()));
 keyboard.onPress('Backspace', () => spawn(spawnIndex));
+keyboard.onPress('KeyG', resetToApron);
+keyboard.onPress('KeyL', resetToThreshold);
 // 7 8 9 0: the four thresholds (gravel 36, grass 36, gravel 18, grass 18); the apron is in the menu.
 ['Digit7', 'Digit8', 'Digit9', 'Digit0'].forEach((code, i) =>
   keyboard.onPress(code, () => {

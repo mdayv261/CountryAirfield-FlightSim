@@ -4,6 +4,7 @@
 
 import type { AircraftId } from '../aircraft';
 import type { TurbulenceLevel } from '../physics/windPresets';
+import type { GraphicsSetting } from '../ui/quality';
 
 export const SETTINGS_KEY = 'cfs.settings.v1';
 
@@ -34,6 +35,8 @@ export interface Settings {
   timeOfDay: number;
   units: UnitSettings;
   sound: { volume: number; muted: boolean };
+  /** Graphics quality: auto steps down by itself if the machine cannot hold 60 fps. */
+  graphics: GraphicsSetting;
   controls: { keyboardFlight: boolean; mouseStick: boolean; autoRudder: boolean };
 }
 
@@ -44,6 +47,7 @@ export const DEFAULT_SETTINGS: Settings = {
   timeOfDay: 11,
   units: { altitude: 'ft', verticalSpeed: 'fpm', temperature: 'C', fuel: 'L', pressure: 'inHg' },
   sound: { volume: 0.8, muted: false },
+  graphics: 'auto',
   controls: { keyboardFlight: true, mouseStick: false, autoRudder: false },
 };
 
@@ -91,6 +95,7 @@ export function sanitiseSettings(raw: unknown): Settings {
       pressure: oneOf(u.pressure, ['inHg', 'hPa'] as const, d.units.pressure),
     },
     sound: { volume: num(s.volume, SETTING_LIMITS.volume, d.sound.volume), muted: bool(s.muted, d.sound.muted) },
+    graphics: oneOf(r.graphics, ['auto', 'high', 'medium', 'low'] as const, d.graphics),
     controls: {
       keyboardFlight: bool(c.keyboardFlight, d.controls.keyboardFlight),
       mouseStick: bool(c.mouseStick, d.controls.mouseStick),
