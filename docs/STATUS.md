@@ -26,6 +26,10 @@
   - Sky: gradient dome shader with a sun disc and glow (sun azimuth 25°, elevation 52°, northern sky), with matching horizon fog.
   - Altocumulus: rows of lumpy cloudlets (6 lobes each, instanced), 22 km square layer, every lobe between 3,000 and 4,500 m.
   - Sun shadows (2048 map) over an 800 m square around the airfield. Logarithmic depth buffer.
+- **Published** (2026-10-20): https://mdayv261.github.io/ from the public repository github.com/mdayv261/mdayv261.github.io.
+  GitHub Actions (`.github/workflows/deploy.yml`) runs the tests, builds and deploys on every push to main. Before the
+  first upload, the history was rewritten to author "mdayv261" with the GitHub no-reply email and personal details
+  were redacted (backup of the original history: ../country-flight-sim-backup-before-publish.bundle).
 - **Stage 10 polish and packaging** (2026-10-20):
   - Profiled in Chrome on the Mac mini M4 at 2560x1260: CPU 1.6–3 ms per frame (physics 0.2, frame 0.4–1.0, render call
     1.1–1.7); full CPU+GPU render cost ~3.5 ms, forced to finish. The renderer is fill-bound: shadows ~1.5 ms, 75 %
